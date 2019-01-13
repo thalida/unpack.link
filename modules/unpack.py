@@ -3,6 +3,7 @@ from pprint import pprint
 from twython import Twython
 import twython.exceptions
 import modules.secrets as secrets
+from flask import jsonify
 
 class Unpack:
     # Patterns and stuff. Or just pattenrs actually.
@@ -17,26 +18,34 @@ class Unpack:
 
     TMP_ID = -1
 
-    def __init__(self, id, path=None):
-        self.id = id
-        self.path = path
+    def __init__(self):
         auth_twitter = Twython(secrets.APP_KEY, secrets.APP_SECRET, oauth_version=2)
         ACCESS_TOKEN = auth_twitter.obtain_access_token()
         self.twitter = Twython(secrets.APP_KEY, access_token=ACCESS_TOKEN)
-        self.tree = self.fetch_tree(self.path)
 
-    def fetch_tree(self, path):
-        images_matches = self.IMAGES_PATTERN.findall(self.path)
+    def get_tree_by_id(self, id):
+       pass
+
+    def get_tree_by_path(self, path, return_type=None):
+        tree = self.__fetch_tree(path)
+
+        if return_type is 'json':
+            tree = jsonify(tree)
+
+        return tree
+
+    def __fetch_tree(self, path):
+        images_matches = self.IMAGES_PATTERN.findall(path)
         if len(images_matches) > 0:
-            return self.fetch_media_tree(images_matches[0])
+            return self.__fetch_media_tree(images_matches[0])
 
-        twitter_matches = self.TWITTER_PATTERN.findall(self.path)
+        twitter_matches = self.TWITTER_PATTERN.findall(path)
         if len(twitter_matches) > 0:
-            return self.fetch_tweet_tree(int(twitter_matches[0]))
+            return self.__fetch_tweet_tree(int(twitter_matches[0]))
 
-        return self.fetch_url_tree(self.path)
+        return self.__fetch_url_tree(path)
 
-    def _format_node(self, data=None, branches=[], num_branches=0, type=None, relationship=None, error=None):
+    def __format_node(self, data=None, branches=[], num_branches=0, type=None, relationship=None, error=None):
         self.TMP_ID += 1
 
         node = {
@@ -58,7 +67,7 @@ class Unpack:
 
         return node
 
-    def fetch_tweet_tree(self, status_id, relationship=None, debug=False):
+    def __fetch_tweet_tree(self, status_id, relationship=None, debug=False):
         try:
             tweet = self.twitter.show_status(
                 id=status_id,
@@ -68,13 +77,13 @@ class Unpack:
             if debug:
                 pprint(tweet)
 
-            node = self._format_node(data=tweet, type='tweet', relationship=relationship)
+            node = self.__format_node(data=tweet, type='tweet', relationship=relationship)
             
             # Get tweet media
             try:
                 media = tweet['entities']['media'] if tweet['entities'].get('media') else []
                 for m in media:
-                    node['branches'].append(self.fetch_media_tree(m['media_url_https'], relationship='link'))
+                    node['branches'].append(self.__fetch_media_tree(m['media_url_https'], relationship='link'))
                     node['num_branches'] += 1
             except Exception as e:
                 print(e) # TODO add proper logging
@@ -85,7 +94,7 @@ class Unpack:
                 num_urls = len(urls) if urls else 0
                 if num_urls > 1 or (num_urls == 1 and not tweet['is_quote_status']):
                     for u in urls:
-                        node['branches'].append(self.fetch_url_tree(u['expanded_url'], relationship='link'))
+                        node['branches'].append(self.__fetch_url_tree(u['expanded_url'], relationship='link'))
                         node['num_branches'] += 1
             except Exception as e:
                 print(e) # TODO add proper logging
@@ -93,8 +102,8 @@ class Unpack:
             # Get quoted tweet
             try:
                 if tweet['is_quote_status']:
-                    quoted_status_id = self._get_quoted_status_id(tweet)
-                    node['branches'].append(self.fetch_tweet_tree(status_id=quoted_status_id, relationship='quoted'))
+                    quoted_status_id = self.__get_quoted_status_id(tweet)
+                    node['branches'].append(self.__fetch_tweet_tree(status_id=quoted_status_id, relationship='quoted'))
                     node['num_branches'] += 1
             except Exception as e:
                 print(e) # TODO add proper logging
@@ -102,7 +111,7 @@ class Unpack:
             # Get reply to tweet
             try:
                 if tweet['in_reply_to_status_id']:
-                    node['branches'].append(self.fetch_tweet_tree(status_id=tweet['in_reply_to_status_id'], relationship='replied_to'))
+                    node['branches'].append(self.__fetch_tweet_tree(status_id=tweet['in_reply_to_status_id'], relationship='replied_to'))
                     node['num_branches'] += 1
             except Exception as e:
                 print(e) # TODO add proper logging
@@ -110,9 +119,9 @@ class Unpack:
             node['has_branches'] = node['num_branches'] > 0;
             return node
         except twython.exceptions.TwythonError as e:
-            return self._format_node(type='tweet', relationship=relationship, error=e)
+            return self.__format_node(type='tweet', relationship=relationship, error=e)
 
-    def _get_quoted_status_id(self, tweet):
+    def __get_quoted_status_id(self, tweet):
         tweet_id = tweet.get('quoted_status', {}).get('id')
 
         if tweet_id is None:
@@ -120,11 +129,11 @@ class Unpack:
 
         return tweet_id
 
-    def fetch_media_tree(self, url, relationship=None):
+    def __fetch_media_tree(self, url, relationship=None):
         # MAYBE: google image search?
-        return self._format_node(data={'url': url}, type='media', relationship=relationship)
+        return self.__format_node(data={'url': url}, type='media', relationship=relationship)
 
-    def fetch_url_tree(self, url, relationship=None):
+    def __fetch_url_tree(self, url, relationship=None):
         # TODO: site scraping
-        return self._format_node(data={'url': url}, type='url', relationship=relationship)
+        return self.__format_node(data={'url': url}, type='url', relationship=relationship)
 

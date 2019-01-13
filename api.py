@@ -29,20 +29,18 @@ deleted_quoted_tweet = 946795191784132610
 # example_status_id = deleted_quoted_tweet
 # example_url = f'https://twitter.com/i/web/status/{example_status_id}'
 
-@api.route('/api/v1/tree/<int:tree_id>', methods=['GET'])
-def get_trees_by_id(tree_id):
-    try:
-        unpack = Unpack(tree_id)
-        return jsonify(unpack.tree)
-    except Exception:
-        logger.exception('500 Error Fetching Window Outside')
-        abort(500)
+# @api.route('/api/v1/tree/<int:tree_id>', methods=['GET'])
+# def get_trees_by_id(tree_id):
+#     try:
+#         return Unpack().get_tree_by_id(tree_id, type="json")
+#     except Exception:
+#         logger.exception('500 Error Fetching Window Outside')
+#         abort(500)
 
 @api.route('/api/v1/tree/path/<path:path>', methods=['GET'])
 def get_trees_by_path(path):
     try:
-        unpack = Unpack(None, path=path)
-        return jsonify(unpack.tree)
+        return Unpack().get_tree_by_path(path, return_type="json")
     except Exception:
         logger.exception('500 Error Fetching Window Outside')
         abort(500)
