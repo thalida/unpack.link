@@ -23,9 +23,6 @@ class Unpack:
         ACCESS_TOKEN = auth_twitter.obtain_access_token()
         self.twitter = Twython(secrets.APP_KEY, access_token=ACCESS_TOKEN)
 
-    def get_tree_by_id(self, id):
-       pass
-
     def get_tree_by_path(self, path, return_type=None):
         tree = self.__fetch_tree(path)
 
@@ -57,7 +54,6 @@ class Unpack:
             'num_branches': num_branches,
             'has_error': False,
         }
-
 
         node['has_branches'] = node['num_branches'] > 0
 
