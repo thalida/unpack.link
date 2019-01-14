@@ -5,49 +5,14 @@ import twython.exceptions
 import modules.secrets as secrets
 from flask import jsonify
 
-class Unpack:
-    # Patterns and stuff. Or just pattenrs actually.
-    VALID_URL_PATTERN = re.compile(r'', re.IGNORECASE)
+# add reddit using their api
+# add insta (check if they have one?)
+# add any url (every single href on the page + the meta data)
 
-    # TODO FIND ALL THE TWITTER PATTERNS
-    TWITTER_PATTERN = re.compile(r'twitter\.com(?:.*?)status/(\d+)', re.IGNORECASE)
-
-    # TODO GET FULL LIST OF IMAGES
-    # LOOK AT THE PIL LIBRARY - LINK HEADERS
-    IMAGES_PATTERN = re.compile(r'\.(gif|jpe?g|tiff|png|jfif|exif|bmp|webp|svg)', re.IGNORECASE)
-
-    TMP_ID = -1
-
-    def __init__(self):
-        auth_twitter = Twython(secrets.APP_KEY, secrets.APP_SECRET, oauth_version=2)
-        ACCESS_TOKEN = auth_twitter.obtain_access_token()
-        self.twitter = Twython(secrets.APP_KEY, access_token=ACCESS_TOKEN)
-
-    def get_tree_by_path(self, path, return_type=None):
-        tree = self.__fetch_tree(path)
-
-        if return_type is 'json':
-            tree = jsonify(tree)
-
-        return tree
-
-    def __fetch_tree(self, path):
-        images_matches = self.IMAGES_PATTERN.findall(path)
-        if len(images_matches) > 0:
-            return self.__fetch_media_tree(images_matches[0])
-
-        twitter_matches = self.TWITTER_PATTERN.findall(path)
-        if len(twitter_matches) > 0:
-            return self.__fetch_tweet_tree(int(twitter_matches[0]))
-
-        return self.__fetch_url_tree(path)
-
-    def __format_node(self, data=None, branches=[], num_branches=0, type=None, relationship=None, error=None):
-        self.TMP_ID += 1
-
+class TypeBase():
+    def setup_node(self, data=None, branches=[], num_branches=0, type=None, relationship=None, error=None):
         node = {
             'type': type,
-            'id': self.TMP_ID, 
             'data': data,
             'relationship': relationship,
             'branches': branches.copy(),
@@ -55,67 +20,91 @@ class Unpack:
             'has_error': False,
         }
 
-        node['has_branches'] = node['num_branches'] > 0
-
         if error is not None:
             node['has_error'] = True
             node['error'] = str(error)
 
         return node
 
-    def __fetch_tweet_tree(self, status_id, relationship=None, debug=False):
+
+class TypeMedia(TypeBase):
+    URL_PATTERN = re.compile(r'\.(gif|jpe?g|tiff|png|jfif|exif|bmp|webp|svg)', re.IGNORECASE)
+
+    def fetch(self, url, relationship=None):
+        # MAYBE: google image search?
+        return self.setup_node(data={'url': url}, type='media', relationship=relationship), None
+
+
+class TypeGeneric(TypeBase):
+    URL_PATTERN = re.compile(r'', re.IGNORECASE)
+
+    def fetch(self, url, relationship=None):
+        # MAYBE: google image search?
+        return self.setup_node(data={'url': url}, type='url', relationship=relationship), None
+
+
+class TypeTwitter(TypeBase):
+    # TODO FIND ALL THE TWITTER PATTERNS
+    URL_PATTERN = re.compile(r'twitter\.com(?:.*?)status/(\d+)', re.IGNORECASE)
+
+    def __init__(self):
+        auth_twitter = Twython(secrets.APP_KEY, secrets.APP_SECRET, oauth_version=2)
+        ACCESS_TOKEN = auth_twitter.obtain_access_token()
+        self.twitter = Twython(secrets.APP_KEY, access_token=ACCESS_TOKEN)
+
+    def fetch(self, status_id, relationship=None, debug=False):
         try:
             tweet = self.twitter.show_status(
-                id=status_id,
+                id=int(status_id),
                 tweet_mode="extended"
             )
 
             if debug:
                 pprint(tweet)
 
-            node = self.__format_node(data=tweet, type='tweet', relationship=relationship)
+            node = self.setup_node(data=tweet, type='tweet', relationship=relationship)
+            
+            branch_urls = []
             
             # Get tweet media
-            try:
-                media = tweet['entities']['media'] if tweet['entities'].get('media') else []
-                for m in media:
-                    node['branches'].append(self.__fetch_media_tree(m['media_url_https'], relationship='link'))
-                    node['num_branches'] += 1
-            except Exception as e:
-                print(e) # TODO add proper logging
+            media = tweet['entities']['media'] if tweet['entities'].get('media') else []
+            for m in media:
+                branch_urls.append({
+                    'url': m['media_url_https'], 
+                    'relationship': 'link'
+                })
 
             # Get tweet external links
-            try:
-                urls = tweet['entities'].get('urls')
-                num_urls = len(urls) if urls else 0
-                if num_urls > 1 or (num_urls == 1 and not tweet['is_quote_status']):
-                    for u in urls:
-                        node['branches'].append(self.__fetch_url_tree(u['expanded_url'], relationship='link'))
-                        node['num_branches'] += 1
-            except Exception as e:
-                print(e) # TODO add proper logging
-
+            urls = tweet['entities'].get('urls')
+            num_urls = len(urls) if urls else 0
+            if num_urls > 1 or (num_urls == 1 and not tweet['is_quote_status']):
+                for u in urls:
+                    branch_urls.append({
+                        'url': u['expanded_url'], 
+                        'relationship': 'link'
+                    })
+            
             # Get quoted tweet
-            try:
-                if tweet['is_quote_status']:
-                    quoted_status_id = self.__get_quoted_status_id(tweet)
-                    node['branches'].append(self.__fetch_tweet_tree(status_id=quoted_status_id, relationship='quoted'))
-                    node['num_branches'] += 1
-            except Exception as e:
-                print(e) # TODO add proper logging
+            if tweet['is_quote_status']:
+                quoted_status_id = self.__get_quoted_status_id(tweet)
+                branch_urls.append({
+                    'url': self.__make_path(quoted_status_id), 
+                    'relationship': 'quoted'
+                })
 
-            # Get reply to tweet
-            try:
-                if tweet['in_reply_to_status_id']:
-                    node['branches'].append(self.__fetch_tweet_tree(status_id=tweet['in_reply_to_status_id'], relationship='replied_to'))
-                    node['num_branches'] += 1
-            except Exception as e:
-                print(e) # TODO add proper logging
+            if tweet['in_reply_to_status_id']:
+                branch_urls.append({
+                    'url': self.__make_path(tweet['in_reply_to_status_id']), 
+                    'relationship': 'replied_to'
+                })
 
-            node['has_branches'] = node['num_branches'] > 0;
-            return node
+            return node, branch_urls
         except twython.exceptions.TwythonError as e:
-            return self.__format_node(type='tweet', relationship=relationship, error=e)
+            return self.setup_node(type='tweet', relationship=relationship, error=e), None
+
+
+    def __make_path(self, id):
+        return f'https://twitter.com/i/web/status/{id}'
 
     def __get_quoted_status_id(self, tweet):
         tweet_id = tweet.get('quoted_status', {}).get('id')
@@ -125,11 +114,55 @@ class Unpack:
 
         return tweet_id
 
-    def __fetch_media_tree(self, url, relationship=None):
-        # MAYBE: google image search?
-        return self.__format_node(data={'url': url}, type='media', relationship=relationship)
 
-    def __fetch_url_tree(self, url, relationship=None):
-        # TODO: site scraping
-        return self.__format_node(data={'url': url}, type='url', relationship=relationship)
+class Unpack:
+    def __init__(self):
+        self.types = {
+            'twitter': TypeTwitter(),
+            'meda': TypeMedia(),
+            'generic': TypeGeneric()
+        }
+
+    def get_tree_by_path(self, path, return_type=None):
+        tree = self.__fetch_tree(path)
+
+        if return_type is 'json':
+            tree = jsonify(tree)
+
+        return tree
+
+    def __fetch_tree(self, resource, relationship=None):
+        res = None
+
+        for t, c in self.types.items():
+            if t is 'generic':
+                continue
+
+            matches = c.URL_PATTERN.findall(resource)
+            if len(matches) > 0:
+                res = {'type': t, 'item': matches[0]}
+                break
+
+        if res is None:
+            res = {'type': 'generic', 'item': resource}
+
+        tree, branch_urls = self.types[res['type']].fetch(res['item'])
+        return self.__fetch_branches(tree, branch_urls)
+
+    def __fetch_branches(self, tree, branch_urls):
+        if branch_urls is None:
+            branch_urls = []
+
+        tree['num_branches'] = len(branch_urls)
+        tree['has_branches'] = tree['num_branches'] > 0
+
+        for branch in branch_urls:
+            try: 
+                tree['branches'].append(
+                    self.__fetch_tree(branch['url'], relationship=branch['relationship'])
+                )
+            except Exception as e:
+                print(e) # TODO add proper logging
+
+        return tree
 
