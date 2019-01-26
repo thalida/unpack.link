@@ -10,9 +10,9 @@ from flask import jsonify
 # add any url (every single href on the page + the meta data)
 
 class TypeBase():
-    def setup_node(self, data=None, branches=[], num_branches=0, type=None, relationship=None, error=None):
+    def setup_node(self, data=None, branches=[], num_branches=0, node_type=None, relationship=None, error=None):
         node = {
-            'type': type,
+            'type': node_type,
             'data': data,
             'relationship': relationship,
             'branches': branches.copy(),
@@ -28,11 +28,14 @@ class TypeBase():
 
 
 class TypeMedia(TypeBase):
+    # figure out how to get the headers then...
+    # look at the headers of the url to figure out if it's an image
+    # not all images will specify their type
     URL_PATTERN = re.compile(r'\.(gif|jpe?g|tiff|png|jfif|exif|bmp|webp|svg)', re.IGNORECASE)
 
     def fetch(self, url, relationship=None):
         # MAYBE: google image search?
-        return self.setup_node(data={'url': url}, type='media', relationship=relationship), None
+        return self.setup_node(data={'url': url}, node_type='media', relationship=relationship), None
 
 
 class TypeGeneric(TypeBase):
@@ -40,7 +43,7 @@ class TypeGeneric(TypeBase):
 
     def fetch(self, url, relationship=None):
         # MAYBE: google image search?
-        return self.setup_node(data={'url': url}, type='url', relationship=relationship), None
+        return self.setup_node(data={'url': url}, node_type='url', relationship=relationship), None
 
 
 class TypeTwitter(TypeBase):
@@ -62,7 +65,7 @@ class TypeTwitter(TypeBase):
             if debug:
                 pprint(tweet)
 
-            node = self.setup_node(data=tweet, type='tweet', relationship=relationship)
+            node = self.setup_node(data=tweet, node_type='tweet', relationship=relationship)
             
             branch_urls = []
             
@@ -100,7 +103,7 @@ class TypeTwitter(TypeBase):
 
             return node, branch_urls
         except twython.exceptions.TwythonError as e:
-            return self.setup_node(type='tweet', relationship=relationship, error=e), None
+            return self.setup_node(node_type='tweet', relationship=relationship, error=e), None
 
 
     def __make_path(self, id):
