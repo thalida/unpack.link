@@ -1,30 +1,24 @@
-# !!!!!
 import os
 os.environ['TZ'] = 'UTC'
 
 import logging
 from pprint import pprint
-from flask import Flask, request, make_response, jsonify, abort
+from flask import Flask, abort
 
-from modules.unpack import Unpack
+from app.api import api
 
 logger = logging.getLogger(__name__)
-api = Flask(__name__)
 
-@api.route('/api/v1/tree/path/<path:path>', methods=['GET'])
-def get_trees_by_path(path):
-    try:
-        return Unpack().get_tree_by_path(path, return_type="json")
-    except Exception:
-        logger.exception('500 Error Fetching Window Outside')
-        abort(500)
+app = Flask(__name__, static_folder = './app/views')
+app.url_map.strict_slashes = False
 
-@api.errorhandler(404)
-def not_found(error):
-    return make_response(jsonify({'error': 'Not found'}), 404)
+app.register_blueprint(api)
 
 if __name__ == '__main__':
-    api.run(debug=True, host='0.0.0.0', port='5001')
+    app.jinja_env.auto_reload = True
+    app.config['TEMPLATES_AUTO_RELOAD'] = True
+    app.run(debug=True, host='0.0.0.0', port='5001')
+    # socketio.run(app, debug=True, host='0.0.0.0', port='5002')
 
 
 # thread_example = 1048986902098059267
