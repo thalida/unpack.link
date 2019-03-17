@@ -14,6 +14,12 @@ from .types.base import TypeBase
 from .types.media import TypeMedia
 from .types.twitter import TypeTwitter
 
+URL_TYPES = [
+    TypeTwitter(),
+    TypeMedia(),
+    TypeBase(),
+]
+
 logger = logging.getLogger(__name__)
 redis_conn = Redis()
 q = Queue(connection=redis_conn)
@@ -32,11 +38,6 @@ socketio = SocketIO(message_queue='redis://')
 # add any url (every single href on the page + the meta data)
 
 class Unpack:
-    URL_TYPES = [
-        TypeTwitter(),
-        TypeMedia(),
-        TypeBase(),
-    ]
 
     tree = None
     job = None
@@ -137,9 +138,10 @@ class Unpack:
         if raw_node is None:
             return tree
 
+        node_type_cls, __ = self.__get_url_type(raw_node['url'])
         raw_branches = self.__load_branches(url_hash)
-        # TODO: get node type to determine Type class used, see __fetch_tree
-        node = TypeBase.setup_node(
+
+        node = node_type_cls.setup_node(
             raw_node['url'],
             data=raw_node['data'],
             node_type=raw_node['type'],
@@ -156,26 +158,16 @@ class Unpack:
         return tree
 
 
-    def __fetch_tree(self, branch, tree=None):
-        if isinstance(branch, str):
-            branch = {'url': branch}
-
+    def __fetch_tree(self, url, tree=None, relationship=None):
         if tree is None:
             tree = {'branches': []}
 
-        node_type_cls = None
-        node_id = None
+        node_type_cls, node_id = self.__get_url_type(url)
+        node, raw_branches = node_type_cls.fetch(node_id, relationship=relationship)
+        print('node fromdb', node['is_from_db'])
 
-        for url_type in self.URL_TYPES:
-            matches = url_type.URL_PATTERN.findall(branch['url'])
-            if len(matches) > 0:
-                node_type_cls = url_type
-                node_id = matches[0]
-                break
-
-        node, next_branches = node_type_cls.fetch(node_id, relationship=branch.get('relationship', None))
-        for next_br in next_branches:
-            node = self.__fetch_tree(next_br, tree=node)
+        for branch in raw_branches:
+            node = self.__fetch_tree(branch['url'], tree=node, relationship=branch['relationship'])
 
         tree['branches'].append(node)
         return tree
@@ -212,6 +204,17 @@ class Unpack:
             return node
         except Exception:
             self.raise_error('Error inserting a new node: {node}', node=node_obj)
+
+    @staticmethod
+    def __get_url_type(url):
+        for url_type in URL_TYPES:
+            matches = url_type.URL_PATTERN.findall(url)
+            if len(matches) > 0:
+                node_type_cls = url_type
+                node_match = matches[0]
+                break
+
+        return node_type_cls, node_match
 
     @staticmethod
     def __get_job(url_hash):
