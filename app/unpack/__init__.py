@@ -10,16 +10,23 @@ from .type.twitter import TypeTwitter
 # add any url (every single href on the page + the meta data)
 
 class Unpack:
-    def __init__(self, url):
+    def __init__(self):
         self.url_types = [
             TypeTwitter(),
             TypeMedia(),
             TypeBase(),
         ]
 
-        self.tree = self.__fetch_tree({'url': url})
+        self.tree = None
+
+    def run(self, url):
+        self.tree = self.__fetch_tree(url)
+        self.__broadcast()
 
     def __fetch_tree(self, branch, tree=None):
+        if isinstance(branch, str):
+            branch = {'url': branch}
+
         if tree is None:
             tree = {'branches': []}
 
@@ -40,4 +47,7 @@ class Unpack:
 
         tree['branches'].append(node)
         return tree
+
+    def __broadcast(self):
+        print(self.tree)
 

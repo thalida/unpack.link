@@ -6,6 +6,8 @@ name = "pypi"
 [packages]
 twython = "*"
 flask = "*"
+redis = "*"
+rq = "*"
 
 [dev-packages]
 

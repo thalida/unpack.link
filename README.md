@@ -1,5 +1,6 @@
 # unpack.this
 
+redis-server --daemonize yes
 
 app/
     api/
