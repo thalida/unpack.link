@@ -1,11 +1,11 @@
 import os
 os.environ['TZ'] = 'UTC'
 
-import logging
-from pprint import pprint
-
 import eventlet
 eventlet.monkey_patch()
+
+import logging
+from pprint import pprint
 
 from flask import Flask, abort
 from flask_socketio import SocketIO, emit

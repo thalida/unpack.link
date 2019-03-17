@@ -3,11 +3,16 @@ from pprint import pprint
 import hashlib
 
 from flask_socketio import SocketIO
+from redis import Redis
+from rq import Queue
 
 from .type.base import TypeBase
 from .type.media import TypeMedia
 from .type.twitter import TypeTwitter
 
+redis_conn = Redis()
+q = Queue(connection=redis_conn)
+socketio = SocketIO(message_queue='redis://')
 
 # thread_example = 1048986902098059267
 # quoted_example = 1048977169186271232
@@ -29,8 +34,6 @@ from .type.twitter import TypeTwitter
 # add insta (check if they have one?)
 # add any url (every single href on the page + the meta data)
 
-socketio = SocketIO(message_queue='redis://')
-
 class Unpack:
     def __init__(self, url):
         self.url_types = [
@@ -38,13 +41,13 @@ class Unpack:
             TypeMedia(),
             TypeBase(),
         ]
-
         self.tree = None
         self.url = url
         self.url_hash = hashlib.md5(str(self.url).encode('utf-8')).hexdigest();
         self.EVENT_KEYS = {
             'TREE_UPDATE': f'tree_update:{self.url_hash}',
         }
+        self.job = q.enqueue(self.run)
 
     def run(self):
         self.tree = self.__fetch_tree(self.url)
