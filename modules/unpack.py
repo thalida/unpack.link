@@ -66,14 +66,14 @@ class TypeTwitter(TypeBase):
                 pprint(tweet)
 
             node = self.setup_node(data=tweet, node_type='tweet', relationship=relationship)
-            
+
             branch_urls = []
-            
+
             # Get tweet media
             media = tweet['entities']['media'] if tweet['entities'].get('media') else []
             for m in media:
                 branch_urls.append({
-                    'url': m['media_url_https'], 
+                    'url': m['media_url_https'],
                     'relationship': 'link'
                 })
 
@@ -83,21 +83,21 @@ class TypeTwitter(TypeBase):
             if num_urls > 1 or (num_urls == 1 and not tweet['is_quote_status']):
                 for u in urls:
                     branch_urls.append({
-                        'url': u['expanded_url'], 
+                        'url': u['expanded_url'],
                         'relationship': 'link'
                     })
-            
+
             # Get quoted tweet
             if tweet['is_quote_status']:
                 quoted_status_id = self.__get_quoted_status_id(tweet)
                 branch_urls.append({
-                    'url': self.__make_path(quoted_status_id), 
+                    'url': self.__make_path(quoted_status_id),
                     'relationship': 'quoted'
                 })
 
             if tweet['in_reply_to_status_id']:
                 branch_urls.append({
-                    'url': self.__make_path(tweet['in_reply_to_status_id']), 
+                    'url': self.__make_path(tweet['in_reply_to_status_id']),
                     'relationship': 'replied_to'
                 })
 
@@ -160,7 +160,7 @@ class Unpack:
         tree['has_branches'] = tree['num_branches'] > 0
 
         for branch in branch_urls:
-            try: 
+            try:
                 tree['branches'].append(
                     self.__fetch_tree(branch['url'], relationship=branch['relationship'])
                 )
