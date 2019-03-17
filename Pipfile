@@ -8,6 +8,8 @@ twython = "*"
 flask = "*"
 redis = "*"
 rq = "*"
+flask-socketio = "*"
+eventlet = "*"
 
 [dev-packages]
 

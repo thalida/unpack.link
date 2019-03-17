@@ -21,6 +21,9 @@
 
 
         <!-- View Scripts -->
+        <script>
+            let PAGE_CONTEXT = {{page_context|tojson}};
+        </script>
         <script src="{{url_for('static', filename='base.js', v='1')}}"
                 type="text/javascript"></script>
         {% block scripts %}{% endblock %}
