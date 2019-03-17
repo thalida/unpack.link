@@ -8,12 +8,7 @@ from rq import Queue
 from ..unpack import Unpack
 
 logger = logging.getLogger(__name__)
-api = Blueprint(
-    'api',
-    __name__,
-    template_folder='../views',
-    static_folder='../views'
-)
+api = Blueprint('api', __name__)
 
 redis_conn = Redis()
 q = Queue(connection=redis_conn)

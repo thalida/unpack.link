@@ -6,13 +6,20 @@ from pprint import pprint
 from flask import Flask, abort
 
 from app.api import api
+from app.views import input_view, results_view
 
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__, static_folder = './app/views')
 app.url_map.strict_slashes = False
 
-app.register_blueprint(api)
+blueprints = [api, input_view, results_view]
+for bp in blueprints:
+    app.register_blueprint(bp)
+
+@app.errorhandler(404)
+def not_found(error):
+    return abort(404)
 
 if __name__ == '__main__':
     app.jinja_env.auto_reload = True
