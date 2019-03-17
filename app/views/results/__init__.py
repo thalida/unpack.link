@@ -1,8 +1,6 @@
 import logging
 from pprint import pprint
 
-import hashlib
-
 from flask import Blueprint, request, abort, render_template
 
 from ...unpack import Unpack

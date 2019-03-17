@@ -18,6 +18,8 @@ class TypeTwitter(TypeBase):
         self.twitter = Twython(secrets.APP_KEY, access_token=ACCESS_TOKEN)
 
     def fetch(self, status_id, relationship=None, debug=False):
+        url = self.__make_path(status_id)
+
         try:
             tweet = self.twitter.show_status(
                 id=int(status_id),
@@ -27,7 +29,7 @@ class TypeTwitter(TypeBase):
             if debug:
                 pprint(tweet)
 
-            node = self.setup_node(data=tweet, node_type='tweet', relationship=relationship)
+            node = self.setup_node(url, data=tweet, node_type='tweet', relationship=relationship)
             branches = []
 
             # Get tweet media
@@ -63,7 +65,7 @@ class TypeTwitter(TypeBase):
                 })
 
         except twython.exceptions.TwythonError as e:
-            node = self.setup_node(node_type='tweet', relationship=relationship, error=e)
+            node = self.setup_node(url, node_type='tweet', relationship=relationship, error=e)
             branches = []
 
         finally:
