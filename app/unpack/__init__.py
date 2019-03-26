@@ -44,7 +44,8 @@ class Unpack:
         return self.job
 
     def run(self):
-        self.tree = UnpackHelpers.get_tree(url=self.url, url_hash=self.url_hash)
+        tree = UnpackHelpers.get_tree(url=self.url, url_hash=self.url_hash)
+        self.tree = tree['branches'][0]
         self.broadcast(self.tree)
 
     def broadcast(self, tree):
