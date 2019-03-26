@@ -11,4 +11,3 @@ ENV_VARS = {
 
 def hash_url(url):
     return hashlib.md5(str(url).encode('utf-8')).hexdigest();
-

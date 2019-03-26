@@ -1,5 +1,6 @@
 import re
 from pprint import pprint
+
 from app import hash_url
 
 class TypeBase():
