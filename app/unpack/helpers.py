@@ -17,6 +17,7 @@ class UnpackHelpers:
     URL_TYPES = [
         TypeTwitter(),
         TypeMedia(),
+        # TypeBase should always be last
         TypeBase(),
     ]
 

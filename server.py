@@ -13,6 +13,10 @@ from flask_socketio import SocketIO, emit
 from app.views import input_view, results_view
 
 logger = logging.getLogger(__name__)
+blueprints = [
+    input_view,
+    results_view,
+]
 
 app = Flask(__name__, static_folder = './app/views')
 app.url_map.strict_slashes = False
@@ -20,10 +24,6 @@ app.url_map.strict_slashes = False
 socketio = SocketIO()
 socketio.init_app(app, message_queue='redis://')
 
-blueprints = [
-    input_view,
-    results_view,
-]
 for bp in blueprints:
     app.register_blueprint(bp)
 

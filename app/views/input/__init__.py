@@ -3,6 +3,8 @@ from pprint import pprint
 
 from flask import Blueprint, abort, render_template
 
+from ...unpack import Unpack
+
 logger = logging.getLogger(__name__)
 input_view = Blueprint(
     'input_view',
@@ -16,7 +18,9 @@ input_view = Blueprint(
 def view():
     try:
         print('trying')
-        return render_template('input/index.html')
+        return render_template(
+            'input/index.html',
+            page_context={})
     except Exception:
         logger.exception('Error loading input view')
         abort(500)
