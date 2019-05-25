@@ -1,6 +1,6 @@
-# unpack.this
+# unpack.link
 
-## Running unpack.link locally
+## Running locally
 ```
 python server.py
 rq worker
