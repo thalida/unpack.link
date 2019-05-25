@@ -28,6 +28,12 @@ class TypeBase():
         return node
 
     def fetch(self, url, relationship=None):
+        # TODO: 25 MARCH 2019 [TNOEL]
+        # Add in fetching using the two libraries below
+        # Figure out how to spin off new jobs to request children
+        # https://2.python-requests.org/en/master/
+        # https://github.com/scrapy/parsel
+
         node = self.setup_node(url, data={'url': url}, node_type='url', relationship=relationship)
         branches = []
         # MAYBE: google image search?
