@@ -17,13 +17,13 @@ results_view = Blueprint(
 def view():
     try:
         url = request.args.get('url')
-        unpacked = Unpack(url)
+        unpacked = Unpack(url=url)
         return render_template(
             'results/index.html',
             page_context={
                 'EVENT_KEYS': {**unpacked.EVENT_KEYS},
                 'URL_HASH': unpacked.url_hash,
-                'JOB_ID': unpacked.job.id
+                'JOB_ID': unpacked.unpack_job_id
             }
         )
     except Exception:

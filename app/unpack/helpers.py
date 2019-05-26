@@ -29,34 +29,14 @@ class UnpackHelpers:
     }
 
     @staticmethod
-    def get_tree(url=None, url_hash=None, tree=None, parent_node_hash=None, relationship=None):
-        if (url is None or url_hash is None) and (url is not None or url_hash is not None):
-            if url_hash is None:
-                url_hash = hash_url(url)
-            else:
-                url = UnpackHelpers.fetch_url_by_hash(url_hash)
+    def get_tree(url_hash, tree=[]):
+        branches = UnpackHelpers.fetch_branches_by_parent_hash(url_hash)
+        if branches is None or len(branches) == 0:
+            return tree
 
-        if url_hash is None and url is None:
-            raise Exception('get_tree requires url or url_hash')
-
-        if tree is None:
-            tree = {'branches': []}
-
-        node, raw_branches = UnpackHelpers.get_node_from_db(url_hash, relationship=relationship)
-        if node is None:
-            node, raw_branches = UnpackHelpers.get_node_from_web(url, relationship=relationship)
-            UnpackHelpers.store_node_and_branch(node, parent_node_hash=parent_node_hash)
-
-        for branch in raw_branches:
-            node = UnpackHelpers.get_tree(
-                url=branch.get('url', None),
-                url_hash=branch.get('child_url_hash', None),
-                tree=node,
-                parent_node_hash=node['url_hash'],
-                relationship=branch['relationship']
-            )
-
-        tree['branches'].append(node)
+        tree = tree + branches
+        for branch in branches:
+            tree = tree + UnpackHelpers.get_tree(branch.get('url_hash'))
         return tree
 
     @staticmethod
@@ -99,7 +79,7 @@ class UnpackHelpers:
         return response
 
     @staticmethod
-    def store_node_and_branch(node_obj, parent_node_hash=None):
+    def store_node(node_obj, parent_node_hash=None):
         try:
             node_query = """
                     INSERT INTO node (url_hash, url, type, data, is_error)
@@ -113,19 +93,28 @@ class UnpackHelpers:
                 node_obj['is_error'],
             )
             node = UnpackHelpers.execute_sql('fetchone', node_query, node_data)
-
-            if parent_node_hash is not None:
-                branch_query = """
-                        INSERT INTO branch (parent_url_hash, child_url_hash, relationship)
-                        VALUES (%s, %s, %s)
-                        RETURNING *
-                        """
-                branch_data = (parent_node_hash, node_obj['url_hash'], node_obj['relationship'])
-                branch = UnpackHelpers.execute_sql('fetchone', branch_query, branch_data)
-
             return node
         except Exception:
             UnpackHelpers.raise_error('Error inserting a new node: {node}', node=node_obj)
+
+    @staticmethod
+    def store_branches(parent_node_obj, branches):
+        try:
+            branch_query = """
+                    INSERT INTO relationship (parent_url_hash, url_hash, relationship_score)
+                    VALUES (%s, %s, %s)
+                    RETURNING *
+                    """
+            if branches is None or len(branches) == 0:
+                UnpackHelpers.execute_sql('fetchone', branch_query, (parent_node_obj['url_hash'],'-1',None))
+            else:
+                for branch in branches:
+                    branch_url_hash = branch.get('url_hash', hash_url(branch.get('url', None)))
+                    branch_data = (parent_node_obj['url_hash'], branch_url_hash, branch.get('relationship', None))
+                    UnpackHelpers.execute_sql('fetchone', branch_query, branch_data)
+
+        except Exception:
+            UnpackHelpers.raise_error('Error inserting a branches: {branches}', branches=branches)
 
     @staticmethod
     def fetch_url_by_hash(url_hash):
@@ -166,14 +155,14 @@ class UnpackHelpers:
                 'fetchall',
                 """
                 SELECT *
-                FROM branch as br
+                FROM relationship as r
                 WHERE parent_url_hash = %s
                 AND created_on >= (
                     SELECT max(n.created_on)
                     FROM node as n
                     WHERE n.url_hash = %s
                 )
-                ORDER BY br.created_on DESC
+                ORDER BY r.created_on DESC
                 """,
                 (parent_url_hash,parent_url_hash,)
             )
