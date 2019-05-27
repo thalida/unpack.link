@@ -12,7 +12,7 @@ from .types.media import TypeMedia
 from .types.twitter import TypeTwitter
 
 redis_conn = Redis()
-unpackers_q = Queue("unpacks", connection=redis_conn)
+unpackers_q = Queue("unpackers", connection=redis_conn)
 controllers_q = Queue("controllers", connection=redis_conn)
 socketio = SocketIO(message_queue='redis://')
 

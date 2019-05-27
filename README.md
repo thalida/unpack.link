@@ -4,7 +4,7 @@
 ```
 python server.py
 rq worker controllers
-rq worker unpacks
+rq worker unpackers
 redis-server --daemonize yes
 ```
 
