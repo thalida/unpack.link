@@ -2,7 +2,7 @@ import re
 from pprint import pprint
 from ...helpers import UnpackHelpers
 
-class TypeBase():
+class TypeBase:
     NAME = 'base'
     URL_PATTERN = re.compile(r'.*', re.IGNORECASE)
     NODE_TYPE = 'url'

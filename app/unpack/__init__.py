@@ -13,7 +13,7 @@ from .types.twitter import TypeTwitter
 
 redis_conn = Redis()
 unpackers_q = Queue("unpacks", connection=redis_conn)
-requester_q = Queue("requests", connection=redis_conn)
+controllers_q = Queue("controllers", connection=redis_conn)
 socketio = SocketIO(message_queue='redis://')
 
 # thread_example = 1048986902098059267
@@ -37,13 +37,11 @@ class Unpack:
         self.unpack_job_id = None
         self.request_job_id = None
 
-        if (node_url is not None) and (node_uuid is None):
+        if node_uuid is None:
             node_uuid = UnpackHelpers.fetch_node_uuid_by_url(node_url)
-        elif (node_url is None) and (node_uuid is not None):
-            node_url = UnpackHelpers.fetch_node_url_by_uuid(node_uuid)
 
-        if (node_uuid is None) or (node_url is None):
-            raise Exception('Unpack requires node uuid and node url')
+        if node_url is None:
+            node_url = UnpackHelpers.fetch_node_url_by_uuid(node_uuid)
 
         self.node_uuid = node_uuid
         self.node_url = node_url
@@ -57,9 +55,19 @@ class Unpack:
         }
 
         if self.is_parent_node:
-            self.handle_request()
+            self.handle_controller()
 
         self.handle_unpack()
+
+
+    def handle_controller(self):
+        request_job = UnpackHelpers.find_job_by_node_uuid(controllers_q.jobs, self.node_uuid)
+        if request_job is None:
+            request_job = controllers_q.enqueue(self.start_coordinator)
+            request_job.meta['node_uuid'] = self.node_uuid
+            request_job.save_meta()
+
+        self.request_job_id = request_job.id
 
 
     def handle_unpack(self):
@@ -70,16 +78,6 @@ class Unpack:
             unpack_job.save_meta()
 
         self.unpack_job_id = unpack_job.id
-
-
-    def handle_request(self):
-        request_job = UnpackHelpers.find_job_by_node_uuid(requester_q.jobs, self.node_uuid)
-        if request_job is None:
-            request_job = requester_q.enqueue(self.start_coordinator)
-            request_job.meta['node_uuid'] = self.node_uuid
-            request_job.save_meta()
-
-        self.request_job_id = request_job.id
 
 
     def walk_node_tree(self):

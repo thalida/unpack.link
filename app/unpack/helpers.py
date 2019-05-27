@@ -11,12 +11,13 @@ from app import ENV_VARS
 
 logger = logging.getLogger(__name__)
 
+
 class UnpackHelpers:
     DB_CREDS = {
         'host': os.getenv(ENV_VARS['DB']['HOST'], 'localhost'),
         'dbname': os.getenv(ENV_VARS['DB']['NAME']),
         'user': os.getenv(ENV_VARS['DB']['USER']),
-        'password': os.getenv(ENV_VARS['DB']['PASSWORD'], None),
+        'password': os.getenv(ENV_VARS['DB']['PASSWORD']),
     }
 
     TERMINAL_NODE_UUID = str(uuid.UUID(int=0))
@@ -26,15 +27,14 @@ class UnpackHelpers:
         tree = []
         branches = UnpackHelpers.fetch_node_children(node_uuid)
 
-        if branches is None or len(branches) == 0:
+        if not branches:
             return tree
 
         for branch in branches:
             tree.append(branch)
-            tree = tree + UnpackHelpers.get_node_descendants(branch.get('node_uuid'))
+            tree = tree + UnpackHelpers.get_node_descendants(branch['node_uuid'])
 
         return tree
-
 
     @staticmethod
     def execute_sql(fetch_action, query, query_args):
@@ -52,12 +52,12 @@ class UnpackHelpers:
             node_query = """
                     INSERT INTO node (uuid, type, data, is_error)
                     VALUES (%s, %s, %s, %s)
-                    RETURNING *
+                    RETURNING (uuid, type, data, is_error)
                     """
             node_data = (
                 node_uuid,
                 node_obj['type'],
-                json.dumps(node_obj['data']),
+                json.dumps(node_obj['data'], default=str),
                 node_obj['is_error']
             )
             node = UnpackHelpers.execute_sql('fetchone', node_query, node_data)
@@ -72,7 +72,7 @@ class UnpackHelpers:
             query = """
                     INSERT INTO relationship (parent_node_uuid, node_uuid, relationship_score)
                     VALUES (%s, %s, %s)
-                    RETURNING *
+                    RETURNING (parent_node_uuid, node_uuid, relationship_score)
                     """
             branch_node_uuid = branch.get('node_uuid', UnpackHelpers.TERMINAL_NODE_UUID)
             relationship_score = branch.get('relationship_score', None)
@@ -87,7 +87,7 @@ class UnpackHelpers:
             node = UnpackHelpers.execute_sql(
                 'fetchone',
                 """
-                SELECT *
+                SELECT uuid, type, data, is_error
                 FROM node
                 WHERE uuid = %s
                 """,
@@ -103,7 +103,7 @@ class UnpackHelpers:
             node = UnpackHelpers.execute_sql(
                 'fetchall',
                 """
-                SELECT *
+                SELECT parent_node_uuid, node_uuid, relationship_score
                 FROM relationship as r
                 WHERE parent_node_uuid = %s
                 AND created_on >= (
@@ -117,11 +117,16 @@ class UnpackHelpers:
             )
             return node
         except Exception:
-            UnpackHelpers.raise_error('Unpack: Error fetching children for: {parent_node_uuid}',
-                            parent_node_uuid=parent_node_uuid)
+            UnpackHelpers.raise_error(
+                'Unpack: Error fetching children for: {parent_node_uuid}',
+                parent_node_uuid=parent_node_uuid
+            )
 
     @staticmethod
     def fetch_node_uuid_by_url(node_url):
+        if node_url is None:
+            raise AttributeError('fetch_node_uuid_by_url requires node_url')
+
         try:
             node_uuid = UnpackHelpers.execute_sql(
                 'fetchone',
@@ -133,7 +138,7 @@ class UnpackHelpers:
                 (node_url,)
             )
 
-            if node_uuid is None:
+            if node_uuid is None and node_url is not None:
                 node_uuid = UnpackHelpers.execute_sql(
                     'fetchone',
                     """
@@ -145,10 +150,16 @@ class UnpackHelpers:
                 )
             return node_uuid.get('node_uuid')
         except Exception:
-            UnpackHelpers.raise_error('Unpack: Error fetching node uuid for url: {node_url}', node_url=node_url)
+            UnpackHelpers.raise_error(
+                'Unpack: Error fetching node uuid for url: {node_url}',
+                node_url=node_url
+            )
 
     @staticmethod
     def fetch_node_url_by_uuid(node_uuid):
+        if node_uuid is None:
+            raise AttributeError('fetch_node_url_by_uuid requires node_uuid')
+
         try:
             node_url = UnpackHelpers.execute_sql(
                 'fetchone',
@@ -161,7 +172,10 @@ class UnpackHelpers:
             )
             return node_url.get('node_url')
         except Exception:
-            UnpackHelpers.raise_error('Unpack: Error fetching node url for uuid: {node_uuid}', node_uuid=node_uuid)
+            UnpackHelpers.raise_error(
+                'Unpack: Error fetching node url for uuid: {node_uuid}',
+                node_uuid=node_uuid
+            )
 
     @staticmethod
     def find_job_by_node_uuid(queued_jobs, node_uuid):
@@ -169,12 +183,12 @@ class UnpackHelpers:
         for job in queued_jobs:
             if job.meta.get('node_uuid') == node_uuid:
                 found_job = job
-                break;
+                break
 
         return found_job
 
     @staticmethod
     def raise_error(msg, **kwargs):
-        msg = 'spomething bad happended' if msg is None else msg
+        msg = 'something bad happended:' if msg is None else msg
         msg = msg.format(**kwargs)
         logger.exception(msg)

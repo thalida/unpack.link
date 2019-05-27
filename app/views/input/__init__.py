@@ -17,7 +17,6 @@ input_view = Blueprint(
 @input_view.route('/input', methods=['GET'])
 def view():
     try:
-        print('trying')
         return render_template(
             'input/index.html',
             page_context={})
