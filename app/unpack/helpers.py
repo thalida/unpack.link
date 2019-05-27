@@ -34,11 +34,11 @@ class UnpackHelpers:
         return response
 
     @staticmethod
-    def get_paths_for_node(node_uuid, paths=None):
+    def get_paths_for_node(node_uuid, parent_node_uuid=None, paths=None):
         if paths is None:
             paths = []
 
-        links = UnpackHelpers.fetch_links_by_source(node_uuid)
+        links = UnpackHelpers.fetch_links_by_source(node_uuid, parent_node_uuid=parent_node_uuid)
 
         if not links:
             return paths
@@ -48,7 +48,11 @@ class UnpackHelpers:
                 continue
 
             paths.append(link)
-            paths = UnpackHelpers.get_paths_for_node(link['target_node_uuid'], paths=paths)
+            paths = UnpackHelpers.get_paths_for_node(
+                link['target_node_uuid'],
+                parent_node_uuid=link['source_node_uuid'],
+                paths=paths
+            )
 
         return paths
 
@@ -126,23 +130,22 @@ class UnpackHelpers:
             UnpackHelpers.raise_error('Unpack: Error fetching metadta for with node_uuid: {node_uuid}', node_uuid=node_uuid)
 
     @staticmethod
-    def fetch_links_by_source(source_node_uuid):
+    def fetch_links_by_source(source_node_uuid, parent_node_uuid=None):
         try:
-            res = UnpackHelpers.execute_sql(
-                'fetchall',
-                """
-                SELECT source_node_uuid, target_node_uuid, link_type, weight
-                FROM link as l
-                WHERE source_node_uuid = %s
-                AND updated_on >= (
-                    SELECT max(n.updated_on)
-                    FROM node_metadata as n
-                    WHERE n.uuid = %s
-                )
-                ORDER BY l.updated_on DESC
-                """,
-                (source_node_uuid,source_node_uuid,)
-            )
+            query = """
+                    SELECT source_node_uuid, target_node_uuid, link_type, weight
+                    FROM link as l
+                    WHERE source_node_uuid = %s
+                    AND updated_on >= (
+                        SELECT max(n.updated_on)
+                        FROM node_metadata as n
+                        WHERE n.uuid = %s
+                    )
+                    ORDER BY l.updated_on DESC
+                    """
+            other_uuid = parent_node_uuid if parent_node_uuid is not None else source_node_uuid
+            query_data = (source_node_uuid,other_uuid,)
+            res = UnpackHelpers.execute_sql('fetchall', query, query_data)
             return res
         except Exception:
             UnpackHelpers.raise_error(
