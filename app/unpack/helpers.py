@@ -20,21 +20,8 @@ class UnpackHelpers:
         'password': os.getenv(ENV_VARS['DB']['PASSWORD']),
     }
 
-    TERMINAL_NODE_UUID = str(uuid.UUID(int=0))
-
-    @staticmethod
-    def get_node_descendants(node_uuid):
-        tree = []
-        branches = UnpackHelpers.fetch_node_children(node_uuid)
-
-        if not branches:
-            return tree
-
-        for branch in branches:
-            tree.append(branch)
-            tree = tree + UnpackHelpers.get_node_descendants(branch['node_uuid'])
-
-        return tree
+    BLANK_NODE_UUID = str(uuid.UUID(int=0))
+    DEFAULT_LINK_TYPE = 0
 
     @staticmethod
     def execute_sql(fetch_action, query, query_args):
@@ -47,108 +34,142 @@ class UnpackHelpers:
         return response
 
     @staticmethod
-    def store_node(node_uuid, node_obj):
-        try:
-            node_query = """
-                    INSERT INTO node (uuid, type, data, is_error)
-                    VALUES (%s, %s, %s, %s)
-                    RETURNING (uuid, type, data, is_error)
-                    """
-            node_data = (
-                node_uuid,
-                node_obj['type'],
-                json.dumps(node_obj['data'], default=str),
-                node_obj['is_error']
-            )
-            node = UnpackHelpers.execute_sql('fetchone', node_query, node_data)
-            return node
-        except Exception:
-            UnpackHelpers.raise_error('Error inserting a new node: {node}', node=node_obj)
+    def get_paths_for_node(node_uuid, paths=None):
+        if paths is None:
+            paths = []
+
+        links = UnpackHelpers.fetch_links_by_source(node_uuid)
+
+        if not links:
+            return paths
+
+        for link in links:
+            if link in paths:
+                continue
+
+            paths.append(link)
+            paths = UnpackHelpers.get_paths_for_node(link['target_node_uuid'], paths=paths)
+
+        return paths
 
     @staticmethod
-    def store_relationship(parent_node_uuid, branch):
+    def store_node(node_url):
         try:
-            branch = branch if branch is not None else {}
             query = """
-                    INSERT INTO relationship (parent_node_uuid, node_uuid, relationship_score)
-                    VALUES (%s, %s, %s)
-                    RETURNING (parent_node_uuid, node_uuid, relationship_score)
+                    INSERT INTO node (url)
+                    VALUES (%s)
+                    ON CONFLICT (url) DO NOTHING
+                    RETURNING uuid
                     """
-            branch_node_uuid = branch.get('node_uuid', UnpackHelpers.TERMINAL_NODE_UUID)
-            relationship_score = branch.get('relationship_score', None)
-            data = (parent_node_uuid, branch_node_uuid, relationship_score)
+            data = (node_url,)
+            res = UnpackHelpers.execute_sql('fetchone', query, data)
+            return res
+        except Exception:
+            UnpackHelpers.raise_error('Error inserting a new node: {node_url}', node_url=node_url)
+
+    @staticmethod
+    def store_node_metadata(node_uuid, node_type=None, data=None, is_error=None):
+        try:
+            query = """
+                    INSERT INTO node_metadata (uuid, node_type, data, is_error)
+                    VALUES (%s, %s, %s, %s)
+                    ON CONFLICT (uuid) DO UPDATE
+                        SET node_type = EXCLUDED.node_type,
+                            data = EXCLUDED.data,
+                            is_error = EXCLUDED.is_error,
+                            updated_on = timezone('utc'::text, now())
+                    RETURNING (uuid, node_type, data, is_error)
+                    """
+            query_data = (node_uuid, node_type, data, is_error)
+            res = UnpackHelpers.execute_sql('fetchone', query, query_data)
+            return res
+        except Exception:
+            UnpackHelpers.raise_error('Error inserting a metada for node: {node_uuid}', node_uuid=node_uuid)
+
+    @staticmethod
+    def store_link(source_node_uuid, target_node_uuid=None, link_type=None, weight=0):
+        try:
+            target_node_uuid = UnpackHelpers.BLANK_NODE_UUID if target_node_uuid is None else target_node_uuid
+            link_type = UnpackHelpers.DEFAULT_LINK_TYPE if link_type is None else link_type
+            query = """
+                    INSERT INTO link (source_node_uuid, target_node_uuid, link_type, weight)
+                    VALUES (%s, %s, %s, %s)
+                    ON CONFLICT (source_node_uuid, target_node_uuid) DO UPDATE
+                        SET link_type = EXCLUDED.link_type,
+                            weight = EXCLUDED.weight,
+                            updated_on = timezone('utc'::text, now())
+                    RETURNING (source_node_uuid, target_node_uuid, link_type, weight)
+                    """
+            data = (source_node_uuid, target_node_uuid, link_type, weight)
             return UnpackHelpers.execute_sql('fetchone', query, data)
         except Exception:
-            UnpackHelpers.raise_error('Unpack: Error inserting a branch: {branch}', branch=branch)
+            UnpackHelpers.raise_error(
+                'Unpack: Error inserting a new link: {source} to {target}',
+                source=source_node_uuid,
+                target=target_node_uuid
+            )
 
     @staticmethod
-    def fetch_node_by_uuid(node_uuid):
+    def fetch_node_metadata(node_uuid):
         try:
-            node = UnpackHelpers.execute_sql(
+            res = UnpackHelpers.execute_sql(
                 'fetchone',
                 """
-                SELECT uuid, type, data, is_error
-                FROM node
+                SELECT uuid, node_type, data, is_error
+                FROM node_metadata
                 WHERE uuid = %s
                 """,
                 (node_uuid,)
             )
-            return node
+            return res
         except Exception:
-            UnpackHelpers.raise_error('Unpack: Error fetching node with node_uuid: {node_uuid}', node_uuid=node_uuid)
+            UnpackHelpers.raise_error('Unpack: Error fetching metadta for with node_uuid: {node_uuid}', node_uuid=node_uuid)
 
     @staticmethod
-    def fetch_node_children(parent_node_uuid):
+    def fetch_links_by_source(source_node_uuid):
         try:
-            node = UnpackHelpers.execute_sql(
+            res = UnpackHelpers.execute_sql(
                 'fetchall',
                 """
-                SELECT parent_node_uuid, node_uuid, relationship_score
-                FROM relationship as r
-                WHERE parent_node_uuid = %s
-                AND created_on >= (
-                    SELECT max(n.created_on)
-                    FROM node as n
+                SELECT source_node_uuid, target_node_uuid, link_type, weight
+                FROM link as l
+                WHERE source_node_uuid = %s
+                AND updated_on >= (
+                    SELECT max(n.updated_on)
+                    FROM node_metadata as n
                     WHERE n.uuid = %s
                 )
-                ORDER BY r.created_on DESC
+                ORDER BY l.updated_on DESC
                 """,
-                (parent_node_uuid,parent_node_uuid,)
+                (source_node_uuid,source_node_uuid,)
             )
-            return node
+            return res
         except Exception:
             UnpackHelpers.raise_error(
-                'Unpack: Error fetching children for: {parent_node_uuid}',
-                parent_node_uuid=parent_node_uuid
+                'Unpack: Error fetching links for: {source_node_uuid}',
+                source_node_uuid=source_node_uuid
             )
 
     @staticmethod
-    def fetch_node_uuid_by_url(node_url):
+    def fetch_node_uuid(node_url, insert_on_new=True):
         if node_url is None:
             raise AttributeError('fetch_node_uuid_by_url requires node_url')
 
         try:
-            node_uuid = UnpackHelpers.execute_sql(
+            res = UnpackHelpers.execute_sql(
                 'fetchone',
                 """
-                SELECT node_uuid
-                FROM url_uuid_map
-                WHERE node_url = %s
+                SELECT uuid
+                FROM node
+                WHERE url = %s
                 """,
                 (node_url,)
             )
 
-            if node_uuid is None and node_url is not None:
-                node_uuid = UnpackHelpers.execute_sql(
-                    'fetchone',
-                    """
-                    INSERT INTO url_uuid_map (node_url)
-                    VALUES (%s)
-                    RETURNING node_uuid
-                    """,
-                    (node_url,)
-                )
-            return node_uuid.get('node_uuid')
+            if insert_on_new and res is None:
+                res = UnpackHelpers.store_node(node_url)
+
+            return res.get('uuid')
         except Exception:
             UnpackHelpers.raise_error(
                 'Unpack: Error fetching node uuid for url: {node_url}',
@@ -156,21 +177,21 @@ class UnpackHelpers:
             )
 
     @staticmethod
-    def fetch_node_url_by_uuid(node_uuid):
+    def fetch_node_url(node_uuid):
         if node_uuid is None:
             raise AttributeError('fetch_node_url_by_uuid requires node_uuid')
 
         try:
-            node_url = UnpackHelpers.execute_sql(
+            res = UnpackHelpers.execute_sql(
                 'fetchone',
                 """
-                SELECT node_url
-                FROM url_uuid_map
-                WHERE node_uuid = %s
+                SELECT url
+                FROM node
+                WHERE uuid = %s
                 """,
                 (node_uuid,)
             )
-            return node_url.get('node_url')
+            return res.get('url')
         except Exception:
             UnpackHelpers.raise_error(
                 'Unpack: Error fetching node url for uuid: {node_uuid}',

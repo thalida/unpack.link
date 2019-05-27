@@ -5,8 +5,7 @@ from ..base import TypeBase
 
 
 class TypeMedia(TypeBase):
-    NAME = 'media'
-    NODE_TYPE = 'media'
+    TYPE = 'media'
     # figure out how to get the headers then...
     # look at the headers of the url to figure out if it's an image
     # not all images will specify their type

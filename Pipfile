@@ -12,6 +12,9 @@ flask-socketio = "*"
 eventlet = "*"
 psycopg2 = "*"
 rq-dashboard = "*"
+selenium = "*"
+webdriver-manager = "*"
+parsel = "*"
 
 [dev-packages]
 

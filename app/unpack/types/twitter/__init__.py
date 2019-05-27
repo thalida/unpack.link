@@ -8,8 +8,7 @@ from ..base import TypeBase
 from . import secrets
 
 class TypeTwitter(TypeBase):
-    NAME = 'twitter'
-    NODE_TYPE = 'twitter'
+    TYPE = 'twitter'
     # TODO FIND ALL THE TWITTER PATTERNS
     URL_PATTERN = re.compile(r'twitter\.com(?:.*?)status/(\d+)', re.IGNORECASE)
 
@@ -18,7 +17,7 @@ class TypeTwitter(TypeBase):
     twitter = Twython(secrets.APP_KEY, access_token=ACCESS_TOKEN)
 
     @classmethod
-    def get_node_and_branches_from_web(cls, node_uuid, node_url, url_matches=None):
+    def get_node_and_links_from_web(cls, node_url, url_matches=None):
         try:
             status_id = url_matches
 
@@ -27,15 +26,15 @@ class TypeTwitter(TypeBase):
                 tweet_mode="extended"
             )
 
-            node = cls.setup_node(node_url, node_data=tweet)
-            branches = []
+            node_details = cls.setup_node_details(node_data=tweet)
+            links = []
 
             # Get tweet media
             media = tweet['entities']['media'] if tweet['entities'].get('media') else []
             for m in media:
-                branches.append({
-                    'node_url': m['media_url_https'],
-                    'relationship_score': 'link'
+                links.append({
+                    'target_node_url': m['media_url_https'],
+                    'link_type': 'link'
                 })
 
             # Get tweet external links
@@ -43,31 +42,31 @@ class TypeTwitter(TypeBase):
             num_urls = len(urls) if urls else 0
             if num_urls > 1 or (num_urls == 1 and not tweet['is_quote_status']):
                 for u in urls:
-                    branches.append({
-                        'node_url': u['expanded_url'],
-                        'relationship_score': 'link'
+                    links.append({
+                        'target_node_url': u['expanded_url'],
+                        'link_type': 'link'
                     })
 
             # Get quoted tweet
             if tweet['is_quote_status']:
                 quoted_status_id = cls.get_quoted_status_id(tweet)
-                branches.append({
-                    'node_url': cls.make_path(quoted_status_id),
-                    'relationship_score': 'quoted'
+                links.append({
+                    'target_node_url': cls.make_path(quoted_status_id),
+                    'link_type': 'quoted'
                 })
 
             if tweet['in_reply_to_status_id']:
-                branches.append({
-                    'node_url': cls.make_path(tweet['in_reply_to_status_id']),
-                    'relationship_score': 'replied_to'
+                links.append({
+                    'target_node_url': cls.make_path(tweet['in_reply_to_status_id']),
+                    'link_type': 'replied_to'
                 })
 
         except twython.exceptions.TwythonError as e:
-            node = cls.setup_node(node_url, node_data=str(e), is_error=True)
-            branches = []
+            node_details = cls.setup_node_details(node_data=str(e), is_error=True)
+            links = []
 
         finally:
-            return node, branches
+            return node_details, links
 
     @classmethod
     def make_path(self, id):

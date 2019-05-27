@@ -33,21 +33,21 @@ class Unpack:
         TypeBase(),
     ]
 
-    def __init__(self, node_url=None, node_uuid=None, parent_node_uuid=None):
+    def __init__(self, node_url=None, node_uuid=None, source_node_uuid=None):
         self.unpack_job_id = None
         self.request_job_id = None
 
         if node_uuid is None:
-            node_uuid = UnpackHelpers.fetch_node_uuid_by_url(node_url)
+            node_uuid = UnpackHelpers.fetch_node_uuid(node_url)
 
         if node_url is None:
-            node_url = UnpackHelpers.fetch_node_url_by_uuid(node_uuid)
+            node_url = UnpackHelpers.fetch_node_url(node_uuid)
 
         self.node_uuid = node_uuid
         self.node_url = node_url
         self.node_url_hash = hash_url(node_url)
-        self.parent_node_uuid = parent_node_uuid
-        self.is_parent_node = self.parent_node_uuid is None
+        self.source_node_uuid = source_node_uuid
+        self.is_parent_node = self.source_node_uuid is None
 
         self.EVENT_KEYS = {
             'TREE_INIT': f'tree_init:{self.node_url_hash}',
@@ -82,37 +82,48 @@ class Unpack:
 
     def walk_node_tree(self):
         type_cls, node_url_match = Unpack.get_node_type_class_by_url(self.node_url)
-        node, branch_nodes = type_cls.fetch(self.node_uuid, self.node_url, url_matches=node_url_match)
+        node_details, raw_links = type_cls.fetch(self.node_uuid, self.node_url, url_matches=node_url_match)
 
-        if node.get('is_from_db', False):
+        if node_details.get('is_from_db', True):
             return
 
-        UnpackHelpers.store_node(self.node_uuid, node)
+        UnpackHelpers.store_node_metadata(
+            self.node_uuid,
+            node_type=node_details.get('node_type'),
+            data=node_details.get('data'),
+            is_error=node_details.get('is_error'),
+        )
 
-        if node['num_branches'] == 0:
-            UnpackHelpers.store_relationship(self.node_uuid, None)
+        source_node_uuid=self.node_uuid
+
+        if node_details['num_branches'] == 0:
+            UnpackHelpers.store_link(source_node_uuid)
             return
 
-        for branch in branch_nodes:
-            branch['node_uuid'] = UnpackHelpers.fetch_node_uuid_by_url(branch.get('node_url'))
-            UnpackHelpers.store_relationship(self.node_uuid, branch)
-            Unpack(
-                parent_node_uuid=self.node_uuid,
-                node_uuid=branch.get('node_uuid', None),
-                node_url=branch.get('node_url', None),
+        for raw_link in raw_links:
+            target_url = raw_link.get('target_node_url')
+            target_node_uuid = UnpackHelpers.fetch_node_uuid(target_url)
+            UnpackHelpers.store_link(
+                source_node_uuid,
+                target_node_uuid=target_node_uuid,
+                link_type=raw_link.get('link_type'),
+                weight=1,
             )
-
+            Unpack(
+                node_uuid=target_node_uuid,
+                node_url=target_url,
+                source_node_uuid=source_node_uuid,
+            )
 
     def start_coordinator(self):
         while True:
-            tree = UnpackHelpers.get_node_descendants(self.node_uuid)
-            parents = {branch.get('parent_node_uuid') for branch in tree}
-            children = {branch.get('node_uuid') for branch in tree}
-            children_without_children = children - parents
-            has_only_terminal_nodes = len(children_without_children) == 1 and UnpackHelpers.TERMINAL_NODE_UUID in children_without_children
-
-            if has_only_terminal_nodes:
-                socketio.emit(self.EVENT_KEYS['TREE_UPDATE'], json.dumps(tree, default=str))
+            paths = UnpackHelpers.get_paths_for_node(self.node_uuid)
+            sources = {link.get('source_node_uuid') for link in paths}
+            targets = {link.get('target_node_uuid') for link in paths}
+            unchecked_targets = targets - sources
+            has_reached_end = len(unchecked_targets) == 1 and UnpackHelpers.BLANK_NODE_UUID in unchecked_targets
+            if has_reached_end:
+                socketio.emit(self.EVENT_KEYS['TREE_UPDATE'], json.dumps(paths, default=str))
                 break
 
     @staticmethod
