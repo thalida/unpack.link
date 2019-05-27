@@ -85,21 +85,19 @@ class Unpack:
     def walk_node_tree(self):
         type_cls, node_url_match = Unpack.get_node_type_class_by_url(self.node_url)
         node, branch_nodes = type_cls.fetch(self.node_uuid, self.node_url, url_matches=node_url_match)
-        not_from_db = not node.get('is_from_db', False)
 
-        if not_from_db:
-            UnpackHelpers.store_node(self.node_uuid, node)
-            if node['num_branches'] == 0:
-                UnpackHelpers.store_relationship(self.node_uuid, None)
+        if node.get('is_from_db', False):
+            return
+
+        UnpackHelpers.store_node(self.node_uuid, node)
+
+        if node['num_branches'] == 0:
+            UnpackHelpers.store_relationship(self.node_uuid, None)
+            return
 
         for branch in branch_nodes:
-            if not_from_db:
-                branch['node_uuid'] = UnpackHelpers.fetch_node_uuid_by_url(branch.get('node_url'))
-                UnpackHelpers.store_relationship(self.node_uuid, branch)
-
-            if branch.get('node_uuid') == UnpackHelpers.TERMINAL_NODE_UUID:
-                continue;
-
+            branch['node_uuid'] = UnpackHelpers.fetch_node_uuid_by_url(branch.get('node_url'))
+            UnpackHelpers.store_relationship(self.node_uuid, branch)
             Unpack(
                 parent_node_uuid=self.node_uuid,
                 node_uuid=branch.get('node_uuid', None),
