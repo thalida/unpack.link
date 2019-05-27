@@ -1,40 +1,60 @@
 import re
 from pprint import pprint
-
-from app import hash_url
+from ...helpers import UnpackHelpers
 
 class TypeBase():
     NAME = 'base'
     URL_PATTERN = re.compile(r'.*', re.IGNORECASE)
+    NODE_TYPE = 'url'
 
-    @staticmethod
-    def setup_node(url, data=None, branches=list(), num_branches=0, node_type=None, relationship=None, error=None, is_error=False, is_from_db=False):
+    @classmethod
+    def setup_node(cls, node_url, node_data=None, branch_nodes=[], is_error=False, is_from_db=False):
         node = {
-            'url': url,
-            'url_hash': hash_url(url),
-            'type': node_type,
-            'data': data,
-            'relationship': relationship,
-            'branches': branches.copy(),
-            'num_branches': num_branches,
-            'is_error': is_error,
+            'type': cls.NODE_TYPE,
+            'url': node_url,
+            'data': node_data,
+            'num_branches': len(branch_nodes),
             'is_from_db': is_from_db,
+            'is_error': is_error,
         }
-
-        if error is not None:
-            node['is_error'] = True
-            node['data'] = str(error)
 
         return node
 
-    def fetch(self, url, relationship=None):
+    @classmethod
+    def fetch(cls, node_uuid, node_url, url_matches=None):
         # TODO: 25 MARCH 2019 [TNOEL]
         # Add in fetching using the two libraries below
         # Figure out how to spin off new jobs to request children
         # https://2.python-requests.org/en/master/
         # https://github.com/scrapy/parsel
 
-        node = self.setup_node(url, data={'url': url}, node_type='url', relationship=relationship)
-        branches = []
-        # MAYBE: google image search?
-        return node, branches
+        is_from_db = True
+        raw_node, raw_branch_nodes = cls.get_node_and_branches_from_db(node_uuid, node_url)
+
+        if raw_node is None:
+            is_from_db = False
+            raw_node, raw_branch_nodes = cls.get_node_and_branches_from_web(node_uuid, node_url, url_matches=url_matches)
+
+        node = cls.setup_node(
+            node_url=node_url,
+            node_data=raw_node.get('data'),
+            branch_nodes=raw_branch_nodes,
+            is_error=raw_node.get('is_error', False),
+            is_from_db=is_from_db,
+        )
+
+        return node, raw_branch_nodes
+
+    @classmethod
+    def get_node_and_branches_from_db(cls, node_uuid, node_url):
+        raw_node = UnpackHelpers.fetch_node_by_uuid(node_uuid)
+        raw_branches = []
+
+        if raw_node is not None:
+            raw_branches = UnpackHelpers.fetch_node_children(node_uuid)
+
+        return raw_node, raw_branches
+
+    @classmethod
+    def get_node_and_branches_from_web(cls, node_uuid, node_url, url_matches=None):
+        return {'data': {'uuid': node_uuid, 'url': node_url, 'url_matches': url_matches}}, []

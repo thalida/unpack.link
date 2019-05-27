@@ -2,25 +2,16 @@ import os
 import json
 import logging
 from pprint import pprint
+import uuid
 
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-from app import ENV_VARS, hash_url
-from .types.base import TypeBase
-from .types.media import TypeMedia
-from .types.twitter import TypeTwitter
+from app import ENV_VARS
 
 logger = logging.getLogger(__name__)
 
 class UnpackHelpers:
-    URL_TYPES = [
-        TypeTwitter(),
-        TypeMedia(),
-        # TypeBase should always be last
-        TypeBase(),
-    ]
-
     DB_CREDS = {
         'host': os.getenv(ENV_VARS['DB']['HOST'], 'localhost'),
         'dbname': os.getenv(ENV_VARS['DB']['NAME']),
@@ -28,44 +19,21 @@ class UnpackHelpers:
         'password': os.getenv(ENV_VARS['DB']['PASSWORD'], None),
     }
 
+    TERMINAL_NODE_UUID = str(uuid.UUID(int=0))
+
     @staticmethod
-    def get_tree(url_hash, tree=[]):
-        branches = UnpackHelpers.fetch_branches_by_parent_hash(url_hash)
+    def get_node_descendants(node_uuid):
+        tree = []
+        branches = UnpackHelpers.fetch_node_children(node_uuid)
+
         if branches is None or len(branches) == 0:
             return tree
 
-        tree = tree + branches
         for branch in branches:
-            tree = tree + UnpackHelpers.get_tree(branch.get('url_hash'))
+            tree.append(branch)
+            tree = tree + UnpackHelpers.get_node_descendants(branch.get('node_uuid'))
+
         return tree
-
-    @staticmethod
-    def get_node_from_db(url_hash, relationship=None):
-        raw_node = UnpackHelpers.fetch_node_by_hash(url_hash)
-        if raw_node is None:
-            return None, []
-
-        type_cls, node_id = UnpackHelpers.find_type_by_url(raw_node['url'])
-        raw_branches = UnpackHelpers.fetch_branches_by_parent_hash(url_hash)
-
-        node = type_cls.setup_node(
-            raw_node['url'],
-            data=raw_node['data'],
-            node_type=raw_node['type'],
-            num_branches=len(raw_branches),
-            relationship=relationship,
-            is_error=raw_node['is_error'],
-            is_from_db=True
-        )
-
-        return node, raw_branches
-
-    @staticmethod
-    def get_node_from_web(url, relationship=None):
-        type_cls, node_id = UnpackHelpers.find_type_by_url(url)
-        node, raw_branches = type_cls.fetch(node_id, relationship=relationship)
-
-        return node, raw_branches
 
 
     @staticmethod
@@ -79,18 +47,18 @@ class UnpackHelpers:
         return response
 
     @staticmethod
-    def store_node(node_obj, parent_node_hash=None):
+    def store_node(node_uuid, node_obj):
         try:
             node_query = """
-                    INSERT INTO node (url_hash, url, type, data, is_error)
-                    VALUES (%s, %s, %s, %s, %s)
+                    INSERT INTO node (uuid, type, data, is_error)
+                    VALUES (%s, %s, %s, %s)
                     RETURNING *
                     """
             node_data = (
-                node_obj['url_hash'],
-                node_obj['url'], node_obj['type'],
+                node_uuid,
+                node_obj['type'],
                 json.dumps(node_obj['data']),
-                node_obj['is_error'],
+                node_obj['is_error']
             )
             node = UnpackHelpers.execute_sql('fetchone', node_query, node_data)
             return node
@@ -98,95 +66,108 @@ class UnpackHelpers:
             UnpackHelpers.raise_error('Error inserting a new node: {node}', node=node_obj)
 
     @staticmethod
-    def store_branches(parent_node_obj, branches):
+    def store_relationship(parent_node_uuid, branch):
         try:
-            branch_query = """
-                    INSERT INTO relationship (parent_url_hash, url_hash, relationship_score)
+            branch = branch if branch is not None else {}
+            query = """
+                    INSERT INTO relationship (parent_node_uuid, node_uuid, relationship_score)
                     VALUES (%s, %s, %s)
                     RETURNING *
                     """
-            if branches is None or len(branches) == 0:
-                UnpackHelpers.execute_sql('fetchone', branch_query, (parent_node_obj['url_hash'],'-1',None))
-            else:
-                for branch in branches:
-                    branch_url_hash = branch.get('url_hash', hash_url(branch.get('url', None)))
-                    branch_data = (parent_node_obj['url_hash'], branch_url_hash, branch.get('relationship', None))
-                    UnpackHelpers.execute_sql('fetchone', branch_query, branch_data)
-
+            branch_node_uuid = branch.get('node_uuid', UnpackHelpers.TERMINAL_NODE_UUID)
+            relationship_score = branch.get('relationship_score', None)
+            data = (parent_node_uuid, branch_node_uuid, relationship_score)
+            return UnpackHelpers.execute_sql('fetchone', query, data)
         except Exception:
-            UnpackHelpers.raise_error('Error inserting a branches: {branches}', branches=branches)
+            UnpackHelpers.raise_error('Unpack: Error inserting a branch: {branch}', branch=branch)
 
     @staticmethod
-    def fetch_url_by_hash(url_hash):
-        try:
-            node = UnpackHelpers.execute_sql(
-                'fetchone',
-                """
-                SELECT url
-                FROM node
-                WHERE url_hash = %s
-                """,
-                (url_hash,)
-            )
-            return node['url'] if node is not None else node
-        except Exception:
-            UnpackHelpers.raise_error('Unpack: Error fetching url by url_hash: {url_hash}', url_hash=url_hash)
-
-    @staticmethod
-    def fetch_node_by_hash(url_hash):
+    def fetch_node_by_uuid(node_uuid):
         try:
             node = UnpackHelpers.execute_sql(
                 'fetchone',
                 """
                 SELECT *
                 FROM node
-                WHERE url_hash = %s
+                WHERE uuid = %s
                 """,
-                (url_hash,)
+                (node_uuid,)
             )
             return node
         except Exception:
-            UnpackHelpers.raise_error('Unpack: Error fetching node with url_hash: {url_hash}', url_hash=url_hash)
+            UnpackHelpers.raise_error('Unpack: Error fetching node with node_uuid: {node_uuid}', node_uuid=node_uuid)
 
     @staticmethod
-    def fetch_branches_by_parent_hash(parent_url_hash):
+    def fetch_node_children(parent_node_uuid):
         try:
             node = UnpackHelpers.execute_sql(
                 'fetchall',
                 """
                 SELECT *
                 FROM relationship as r
-                WHERE parent_url_hash = %s
+                WHERE parent_node_uuid = %s
                 AND created_on >= (
                     SELECT max(n.created_on)
                     FROM node as n
-                    WHERE n.url_hash = %s
+                    WHERE n.uuid = %s
                 )
                 ORDER BY r.created_on DESC
                 """,
-                (parent_url_hash,parent_url_hash,)
+                (parent_node_uuid,parent_node_uuid,)
             )
             return node
         except Exception:
-            UnpackHelpers.raise_error('Unpack: Error fetching branches for: {parent_url_hash}',
-                            parent_url_hash=parent_url_hash)
+            UnpackHelpers.raise_error('Unpack: Error fetching children for: {parent_node_uuid}',
+                            parent_node_uuid=parent_node_uuid)
 
     @staticmethod
-    def find_type_by_url(url):
-        for url_type in UnpackHelpers.URL_TYPES:
-            matches = url_type.URL_PATTERN.findall(url)
-            if len(matches) > 0:
-                type_cls = url_type
-                node_match = matches[0]
-                break
+    def fetch_node_uuid_by_url(node_url):
+        try:
+            node_uuid = UnpackHelpers.execute_sql(
+                'fetchone',
+                """
+                SELECT node_uuid
+                FROM url_uuid_map
+                WHERE node_url = %s
+                """,
+                (node_url,)
+            )
 
-        return type_cls, node_match
+            if node_uuid is None:
+                node_uuid = UnpackHelpers.execute_sql(
+                    'fetchone',
+                    """
+                    INSERT INTO url_uuid_map (node_url)
+                    VALUES (%s)
+                    RETURNING node_uuid
+                    """,
+                    (node_url,)
+                )
+            return node_uuid.get('node_uuid')
+        except Exception:
+            UnpackHelpers.raise_error('Unpack: Error fetching node uuid for url: {node_url}', node_url=node_url)
 
     @staticmethod
-    def find_job_by_hash(queued_jobs, url_hash):
+    def fetch_node_url_by_uuid(node_uuid):
+        try:
+            node_url = UnpackHelpers.execute_sql(
+                'fetchone',
+                """
+                SELECT node_url
+                FROM url_uuid_map
+                WHERE node_uuid = %s
+                """,
+                (node_uuid,)
+            )
+            return node_url.get('node_url')
+        except Exception:
+            UnpackHelpers.raise_error('Unpack: Error fetching node url for uuid: {node_uuid}', node_uuid=node_uuid)
+
+    @staticmethod
+    def find_job_by_node_uuid(queued_jobs, node_uuid):
         found_job = None
         for job in queued_jobs:
-            if job.meta.get('url_hash') == url_hash:
+            if job.meta.get('node_uuid') == node_uuid:
                 found_job = job
                 break;
 

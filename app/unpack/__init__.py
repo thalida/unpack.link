@@ -7,6 +7,9 @@ from rq import Queue
 
 from app import hash_url
 from .helpers import UnpackHelpers
+from .types.base import TypeBase
+from .types.media import TypeMedia
+from .types.twitter import TypeTwitter
 
 redis_conn = Redis()
 unpackers_q = Queue("unpacks", connection=redis_conn)
@@ -22,29 +25,35 @@ socketio = SocketIO(message_queue='redis://')
 # deleted_quoted_tweet = 946795191784132610
 
 class Unpack:
-    def __init__(self, url=None, url_hash=None, parent_node_hash=None, relationship=None):
-        if (url is None or url_hash is None) and (url is not None or url_hash is not None):
-            if url_hash is None:
-                url_hash = hash_url(url)
-            else:
-                url = UnpackHelpers.fetch_url_by_hash(url_hash)
+    NODE_TYPES = [
+        TypeTwitter(),
+        TypeMedia(),
 
-        if url_hash is None and url is None:
-            raise Exception('get_tree requires url or url_hash')
+        # TypeBase should always be last
+        TypeBase(),
+    ]
 
+    def __init__(self, node_url=None, node_uuid=None, parent_node_uuid=None):
         self.unpack_job_id = None
         self.request_job_id = None
-        self.url = url
-        self.url_hash = url_hash
-        self.parent_node_hash = parent_node_hash
-        self.is_parent_node = parent_node_hash is None
 
-        # TODO: Change with new relationship math?
-        self.relationship = relationship
+        if (node_url is not None) and (node_uuid is None):
+            node_uuid = UnpackHelpers.fetch_node_uuid_by_url(node_url)
+        elif (node_url is None) and (node_uuid is not None):
+            node_url = UnpackHelpers.fetch_node_url_by_uuid(node_uuid)
+
+        if (node_uuid is None) or (node_url is None):
+            raise Exception('Unpack requires node uuid and node url')
+
+        self.node_uuid = node_uuid
+        self.node_url = node_url
+        self.node_url_hash = hash_url(node_url)
+        self.parent_node_uuid = parent_node_uuid
+        self.is_parent_node = self.parent_node_uuid is None
 
         self.EVENT_KEYS = {
-            'TREE_INIT': f'tree_init:{self.url_hash}',
-            'TREE_UPDATE': f'tree_update:{self.url_hash}',
+            'TREE_INIT': f'tree_init:{self.node_url_hash}',
+            'TREE_UPDATE': f'tree_update:{self.node_url_hash}',
         }
 
         if self.is_parent_node:
@@ -54,52 +63,69 @@ class Unpack:
 
 
     def handle_unpack(self):
-        unpack_job = UnpackHelpers.find_job_by_hash(unpackers_q.jobs, self.url_hash)
+        unpack_job = UnpackHelpers.find_job_by_node_uuid(unpackers_q.jobs, self.node_uuid)
         if unpack_job is None:
-            unpack_job = unpackers_q.enqueue(self.get_tree)
-            unpack_job.meta['url_hash'] = self.url_hash
+            unpack_job = unpackers_q.enqueue(self.walk_node_tree)
+            unpack_job.meta['node_uuid'] = self.node_uuid
             unpack_job.save_meta()
 
         self.unpack_job_id = unpack_job.id
 
 
     def handle_request(self):
-        request_job = UnpackHelpers.find_job_by_hash(requester_q.jobs, self.url_hash)
+        request_job = UnpackHelpers.find_job_by_node_uuid(requester_q.jobs, self.node_uuid)
         if request_job is None:
             request_job = requester_q.enqueue(self.start_coordinator)
-            request_job.meta['url_hash'] = self.url_hash
+            request_job.meta['node_uuid'] = self.node_uuid
             request_job.save_meta()
 
         self.request_job_id = request_job.id
 
 
-    def get_tree(self):
-        node, raw_branches = UnpackHelpers.get_node_from_db(self.url_hash, relationship=self.relationship)
-        if node is None:
-            node, raw_branches = UnpackHelpers.get_node_from_web(self.url, relationship=self.relationship)
-            UnpackHelpers.store_node(node)
-            UnpackHelpers.store_branches(node, raw_branches)
+    def walk_node_tree(self):
+        type_cls, node_url_match = Unpack.get_node_type_class_by_url(self.node_url)
+        node, branch_nodes = type_cls.fetch(self.node_uuid, self.node_url, url_matches=node_url_match)
+        not_from_db = not node.get('is_from_db', False)
 
-        for branch in raw_branches:
-            if branch.get('url_hash') == '-1':
+        if not_from_db:
+            UnpackHelpers.store_node(self.node_uuid, node)
+            if node['num_branches'] == 0:
+                UnpackHelpers.store_relationship(self.node_uuid, None)
+
+        for branch in branch_nodes:
+            if not_from_db:
+                branch['node_uuid'] = UnpackHelpers.fetch_node_uuid_by_url(branch.get('node_url'))
+                UnpackHelpers.store_relationship(self.node_uuid, branch)
+
+            if branch.get('node_uuid') == UnpackHelpers.TERMINAL_NODE_UUID:
                 continue;
 
             Unpack(
-                parent_node_hash=node['url_hash'],
-                url=branch.get('url', None),
-                url_hash=branch.get('url_hash', None),
-                relationship=branch.get('relationship', None),
+                parent_node_uuid=self.node_uuid,
+                node_uuid=branch.get('node_uuid', None),
+                node_url=branch.get('node_url', None),
             )
 
 
     def start_coordinator(self):
         while True:
-            tree = UnpackHelpers.get_tree(self.url_hash)
-            parents = {branch.get('parent_url_hash') for branch in tree}
-            children = {branch.get('url_hash') for branch in tree}
-            children_without_links = children - parents
-            only_ends = len(children_without_links) == 1 and '-1' in children_without_links
+            tree = UnpackHelpers.get_node_descendants(self.node_uuid)
+            parents = {branch.get('parent_node_uuid') for branch in tree}
+            children = {branch.get('node_uuid') for branch in tree}
+            children_without_children = children - parents
+            has_only_terminal_nodes = len(children_without_children) == 1 and UnpackHelpers.TERMINAL_NODE_UUID in children_without_children
 
-            if only_ends:
+            if has_only_terminal_nodes:
                 socketio.emit(self.EVENT_KEYS['TREE_UPDATE'], json.dumps(tree, default=str))
                 break
+
+    @staticmethod
+    def get_node_type_class_by_url(node_url):
+        for url_type in Unpack.NODE_TYPES:
+            matches = url_type.URL_PATTERN.findall(node_url)
+            if len(matches) > 0:
+                type_cls = url_type
+                node_match = matches[0]
+                break
+
+        return type_cls, node_match
