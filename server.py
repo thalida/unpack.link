@@ -22,7 +22,7 @@ app = Flask(__name__, static_folder = './app/views')
 app.url_map.strict_slashes = False
 
 socketio = SocketIO()
-socketio.init_app(app, message_queue='redis://')
+socketio.init_app(app, message_queue='amqp://')
 
 for bp in blueprints:
     app.register_blueprint(bp)

@@ -65,7 +65,7 @@ class TypeBase:
 
     @classmethod
     def get_node_and_links_from_web(cls, node_url, url_matches=None):
-        driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=options)
+        driver = webdriver.Chrome(ChromeDriverManager('2.42').install(), chrome_options=options)
         driver.get(node_url)
         page_source = driver.page_source
         driver.close()

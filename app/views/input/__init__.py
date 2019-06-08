@@ -3,8 +3,6 @@ from pprint import pprint
 
 from flask import Blueprint, abort, render_template
 
-from ...unpack import Unpack
-
 logger = logging.getLogger(__name__)
 input_view = Blueprint(
     'input_view',

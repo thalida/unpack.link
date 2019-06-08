@@ -474,14 +474,14 @@ document.addEventListener("DOMContentLoaded", function() {
 
     socket.on(PAGE_CONTEXT.EVENT_KEYS.TREE_UPDATE, function(tree) {
         console.log(tree)
-        let formattedTree = formatForD3(tree)
-        window.baseNodes = formattedTree.nodes
-        window.baseBranches = formattedTree.branches
-        window.nodes = [...window.baseNodes]
-        window.branches = [...window.baseBranches]
-        window.links = [...window.baseBranches]
-        console.log('formattedTree', formattedTree, window.nodes, window.branches)
-        render()
+        // let formattedTree = formatForD3(tree)
+        // window.baseNodes = formattedTree.nodes
+        // window.baseBranches = formattedTree.branches
+        // window.nodes = [...window.baseNodes]
+        // window.branches = [...window.baseBranches]
+        // window.links = [...window.baseBranches]
+        // console.log('formattedTree', formattedTree, window.nodes, window.branches)
+        // render()
         // var data = FDL(window.nodes, window.branches);
         // render(data);
     });

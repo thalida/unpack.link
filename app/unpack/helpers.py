@@ -7,7 +7,7 @@ import uuid
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-from app import ENV_VARS
+from app import ENV_VARS, hash_url
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +22,31 @@ class UnpackHelpers:
 
     BLANK_NODE_UUID = str(uuid.UUID(int=0))
     DEFAULT_LINK_TYPE = 0
+
+    @staticmethod
+    def get_url_hash(node_url):
+        return hash_url(node_url)
+
+    @staticmethod
+    def get_event_keys(node_url_hash=None, node_url=None, node_uuid=None):
+        if node_url_hash is None and node_url is None and node_uuid is None:
+            raise AttributeError('get_event_keys requires a node_url_hash, node_url, or node_uuid')
+
+        if node_url_hash is None:
+            if node_url is None and node_uuid is not None:
+                node_url = UnpackHelpers.fetch_node_url(node_uuid)
+
+            node_url_hash = UnpackHelpers.get_url_hash(node_url)
+
+        if node_url_hash is None:
+            raise AttributeError('get_event_keys requires a node_url_hash, node_url, or node_uuid')
+
+        event_keys = {
+            'TREE_INIT': f'tree_init:{node_url_hash}',
+            'TREE_UPDATE': f'tree_update:{node_url_hash}',
+        }
+
+        return event_keys
 
     @staticmethod
     def execute_sql(fetch_action, query, query_args):
