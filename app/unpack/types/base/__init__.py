@@ -71,11 +71,10 @@ class TypeBase:
         driver.close()
 
         sel = Selector(text=page_source)
-        page_links = sel.css('*::attr(href),*::attr(src)').getall()
-        print(page_links)
+        page_links = sel.css('*::attr(href)').getall()
 
         node_data = {'url_matches': url_matches, 'page_source': page_source}
         node_details = cls.setup_node_details(node_data=node_data)
-        raw_links = []
+        raw_links = [{'target_node_url': link, 'link_type': 'link'} for link in page_links]
 
         return node_details, raw_links

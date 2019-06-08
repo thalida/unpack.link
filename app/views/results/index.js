@@ -464,15 +464,27 @@ function formatForD3 (tree, nodes, branches, parentURLHash) {
     return {nodes, branches}
 }
 
-document.addEventListener("DOMContentLoaded", function() {
-    // window.cv = d3.select("body")
-    //      .append("canvas")
-    //      .attr("width", WIDTH)
-    //      .attr("height", HEIGHT);
-    // window.canvas = cv.node().getContext("2d");
+function getEventKeys() {
+    const urlParams = new URLSearchParams(window.location.search)
+    const url = urlParams.get('url')
+    var eventKeysReq = new XMLHttpRequest();
+    eventKeysReq.addEventListener("load", handleEventKeysResponse);
+    eventKeysReq.open("GET", `/unpack/event_keys?url=${url}`, true);
+    eventKeysReq.send();
+}
 
+function handleEventKeysResponse() {
+    if (this.status !== 200) {
+        return
+    }
 
-    socket.on(PAGE_CONTEXT.EVENT_KEYS.TREE_UPDATE, function(tree) {
+    const event_keys = JSON.parse(this.responseText);
+    startListening(event_keys);
+    startUnpacking()
+}
+
+function startListening(event_keys) {
+    socket.on(event_keys.TREE_UPDATE, function(tree) {
         console.log(tree)
         // let formattedTree = formatForD3(tree)
         // window.baseNodes = formattedTree.nodes
@@ -485,4 +497,29 @@ document.addEventListener("DOMContentLoaded", function() {
         // var data = FDL(window.nodes, window.branches);
         // render(data);
     });
+}
+
+function startUnpacking() {
+    const urlParams = new URLSearchParams(window.location.search)
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/unpack/start');
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.addEventListener("load", handleUnpackResponse);
+    xhr.send(JSON.stringify({
+        url: urlParams.get('url'),
+    }));
+}
+
+function handleUnpackResponse() {
+    console.log(this)
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    // window.cv = d3.select("body")
+    //      .append("canvas")
+    //      .attr("width", WIDTH)
+    //      .attr("height", HEIGHT);
+    // window.canvas = cv.node().getContext("2d");
+
+    getEventKeys()
 });

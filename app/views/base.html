@@ -22,7 +22,7 @@
 
         <!-- View Scripts -->
         <script>
-            let PAGE_CONTEXT = {{page_context|tojson}};
+            let PAGE_CONTEXT = {{page_context|default({})|tojson}};
         </script>
         <script src="{{url_for('static', filename='base.js', v='1')}}"
                 type="text/javascript"></script>

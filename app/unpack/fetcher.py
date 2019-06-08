@@ -3,19 +3,10 @@ import json
 
 import pika
 
-from app.unpack.helpers import UnpackHelpers
-from app.unpack.types.base import TypeBase
-from app.unpack.types.media import TypeMedia
-from app.unpack.types.twitter import TypeTwitter
-
-
-connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
-channel = connection.channel()
-channel.exchange_declare(exchange='shard.workers', exchange_type='direct')
-result = channel.queue_declare(queue='', exclusive=True)
-queue_name = result.method.queue
-channel.queue_bind(exchange='shard.workers', queue=queue_name, routing_key='fetcher')
-print(' [*] Waiting for Fetcher messages. To exit press CTRL+C')
+from .helpers import UnpackHelpers
+from .types.base import TypeBase
+from .types.media import TypeMedia
+from .types.twitter import TypeTwitter
 
 
 class Fetcher:
@@ -37,11 +28,15 @@ class Fetcher:
             body['node_url'] = UnpackHelpers.fetch_node_url(body.get('node_uuid'))
 
         self.state = body.get('state', {'level': 0})
-        self.rules = body.get('rules', {'max_link_depth': 5})
-        self.node_uuid = body['node_uuid']
+        self.rules = body.get('rules', {'max_link_depth': 2})
+
         self.node_url = body['node_url']
-        self.source_node_uuid = body.get('source_node_uuid', None)
-        self.origin_source_node_uuid = body.get('origin_source_node_uuid', self.node_uuid)
+        self.node_uuid = body['node_uuid']
+        self.source_node_uuid = body.get('source_node_uuid')
+        self.origin_source_url = body.get('origin_source_url')
+
+        if self.origin_source_url is None:
+            self.origin_source_url = self.node_url
 
         self.node_url_hash = UnpackHelpers.get_url_hash(body['node_url'])
         self.is_parent_node = self.source_node_uuid is None
@@ -62,13 +57,11 @@ class Fetcher:
                 is_error=node_details.get('is_error'),
             )
 
-        print(self.node_url, self.node_uuid)
         Fetcher.broadcast(
-            node_details,
-            node_uuid=self.node_uuid,
             node_url=self.node_url,
             source_node_uuid=self.source_node_uuid,
-            origin_source_node_uuid=self.origin_source_node_uuid,
+            target_node_uuid=self.node_uuid,
+            origin_source_url=self.origin_source_url,
         )
 
         if node_details['num_branches'] == 0:
@@ -102,7 +95,7 @@ class Fetcher:
                     'node_uuid': target_node_uuid,
                     'node_url': target_url,
                     'source_node_uuid': self.node_uuid,
-                    'origin_source_node_uuid':self.origin_source_node_uuid,
+                    'origin_source_url':self.origin_source_url,
                     'state': new_state,
                     'rules': self.rules,
                 }),
@@ -111,16 +104,15 @@ class Fetcher:
                 ))
 
     @staticmethod
-    def broadcast(node_details, node_uuid=None, node_url=None, source_node_uuid=None, origin_source_node_uuid=None):
+    def broadcast(node_url=None, source_node_uuid=None, target_node_uuid=None, origin_source_url=None):
         channel.basic_publish(
             exchange='shard.workers',
             routing_key='broadcaster',
             body=json.dumps({
-                'node_uuid': node_uuid,
                 'node_url': node_url,
                 'source_node_uuid': source_node_uuid,
-                'origin_source_node_uuid': origin_source_node_uuid,
-                'node_details': node_details,
+                'target_node_uuid': target_node_uuid,
+                'origin_source_url': origin_source_url,
             }, default=str),
             properties=pika.BasicProperties(
                 delivery_mode=2,  # make message persistent
@@ -138,7 +130,21 @@ class Fetcher:
         return type_cls, node_match
 
 
-channel.basic_qos(prefetch_count=1)
-channel.basic_consume(queue=queue_name, on_message_callback=Fetcher, auto_ack=False)
+def main():
+    global channel
 
-channel.start_consuming()
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+    channel = connection.channel()
+    channel.exchange_declare(exchange='shard.workers', exchange_type='direct')
+    result = channel.queue_declare(queue='', exclusive=True)
+    queue_name = result.method.queue
+    channel.queue_bind(exchange='shard.workers', queue=queue_name, routing_key='fetcher')
+    print(' [*] Waiting for Fetcher messages. To exit press CTRL+C')
+
+    channel.basic_qos(prefetch_count=1)
+    channel.basic_consume(queue=queue_name, on_message_callback=Fetcher, auto_ack=False)
+
+    channel.start_consuming()
+
+if __name__ == '__main__':
+    main()
