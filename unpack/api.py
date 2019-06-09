@@ -37,7 +37,9 @@ def unpack():
             routing_key='fetcher',
             body=json.dumps({
                 'node_url': node_url,
-                'rules': {'max_link_depth': 1}
+                'rules': {
+                    'max_link_depth': 1
+                }
             }),
             properties=pika.BasicProperties(
                 delivery_mode=2,  # make message persistent

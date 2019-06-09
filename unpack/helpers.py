@@ -152,16 +152,28 @@ class UnpackHelpers:
             )
 
     @staticmethod
-    def fetch_node_metadata(node_uuid):
+    def fetch_node_metadata(node_uuid, min_update_date=None):
         try:
+            if min_update_date is not None:
+                query = """
+                        SELECT uuid, node_type, data, is_error
+                        FROM node_metadata
+                        WHERE uuid = %s
+                        AND updated_on > %s
+                        """
+                query_args = (node_uuid,min_update_date,)
+            else:
+                query = """
+                        SELECT uuid, node_type, data, is_error
+                        FROM node_metadata
+                        WHERE uuid = %s
+                        """
+                query_args = (node_uuid,)
+
             res = UnpackHelpers.execute_sql(
                 'fetchone',
-                """
-                SELECT uuid, node_type, data, is_error
-                FROM node_metadata
-                WHERE uuid = %s
-                """,
-                (node_uuid,)
+                query,
+                query_args,
             )
             return res
         except Exception:

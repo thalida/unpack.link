@@ -25,7 +25,7 @@ deleted_quoted_tweet = 946795191784132610
 # TODOs
 
 ## 8 June
-- [ ] Set general staleness checks (type has a default, rules can override)
+- [x] Set general staleness checks (type has a default, rules can override)
 - [ ] Start rendering nodes.
     - [ ] Setup vue.
     - [ ] Setup typescript

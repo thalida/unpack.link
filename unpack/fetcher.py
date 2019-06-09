@@ -18,6 +18,16 @@ class Fetcher:
         TypeBase(),
     ]
 
+    DEFAULT_STATE = {
+        'level': 0,
+    }
+
+    DEFAULT_RULES = {
+        'force_from_web': False,
+        'force_from_db': False,
+        'max_link_depth': 2,
+    }
+
     def __init__(self, ch, method, properties, body):
         body = json.loads(body)
 
@@ -27,8 +37,11 @@ class Fetcher:
         if body.get('node_url') is None:
             body['node_url'] = UnpackHelpers.fetch_node_url(body.get('node_uuid'))
 
-        self.state = body.get('state', {'level': 0})
-        self.rules = body.get('rules', {'max_link_depth': 2})
+        state = body.get('state', {})
+        self.state = {**self.DEFAULT_STATE, **state}
+
+        rules = body.get('rules', {})
+        self.rules = {**self.DEFAULT_RULES, **rules}
 
         self.node_url = body['node_url']
         self.node_uuid = body['node_uuid']
@@ -46,7 +59,7 @@ class Fetcher:
 
     def walk_node_tree(self):
         type_cls, node_url_match = Fetcher.get_node_type_class_by_url(self.node_url)
-        node_details, raw_links = type_cls.fetch(self.node_uuid, self.node_url, url_matches=node_url_match)
+        node_details, raw_links = type_cls.fetch(self.node_uuid, self.node_url, url_matches=node_url_match, rules=self.rules)
 
         if not node_details.get('is_from_db', True):
             UnpackHelpers.store_node_metadata(
