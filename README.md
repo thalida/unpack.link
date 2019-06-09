@@ -14,6 +14,10 @@ Broadcaster Queue: `python contorller.py broadcaster`
 
 Rebuild Docs: `make html -C docs/`
 
+https://www.python.org/dev/peps/pep-0008/
+
+https://numpydoc.readthedocs.io/en/latest/format.html#docstring-standard
+
 ## Examples
 ### Twitter
 ```
