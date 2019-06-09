@@ -35,11 +35,23 @@ deleted_quoted_tweet = 946795191784132610
 ## 8 June
 - [x] Set general staleness checks (type has a default, rules can override)
 - [ ] Start rendering nodes.
-    - [ ] Setup vue.
-    - [ ] Setup typescript
+    - [x] Setup vue.
+    - [x] Setup typescript
+    - [ ] Create new index view
+        - [ ] Form enter a url, get redirected to results view
+    - [ ] Create new results view
+        - [ ] has url field (silent refreshing(?))
+        - [ ] has query controls
+        - [ ] hit api endpoints
+        - [ ] socketio setup
+        - [ ] render node on socket push
+        - [ ] setup proper storage
 - [x] Move upnack folder to top level
-- [x] Add better comments and documentation
+- [ ] Store a screenshot of the fetched site
+- [ ] Don't fetch css or fonts
+- [ ] Add better comments and documentation
     - [x] Figure out one of those self documenting sites (sphinx)
+    - [ ] Vue/JS autodocs(?)
 
 
 ## Some Date
@@ -68,5 +80,3 @@ if url
 pk_id <==> path
 pk_id, date, path, meta
 pk_id, pk_id, relationship (quote, reply, link)
-
-
