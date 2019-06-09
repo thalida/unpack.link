@@ -1,13 +1,13 @@
 # TODO
 
 ## 8 June
-[] Set general staleness checks, type has a default, rules can override
-[] Start rendering nodes
-    [] Setup vue
-    [] Setup typescript
-[] Move upnack folder to top level
-[] Add better comments and documentation
-    [] Figure out one of those self documenting sites (sphinx)
+- [] Set general staleness checks (type has a default, rules can override)
+- [] Start rendering nodes.
+    - [] Setup vue.
+    - [] Setup typescript
+- [x] Move upnack folder to top level
+- [] Add better comments and documentation
+    - [] Figure out one of those self documenting sites (sphinx)
 
 
 ## Some Date

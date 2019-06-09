@@ -10,7 +10,7 @@ from pprint import pprint
 from flask import Flask, abort
 from flask_socketio import SocketIO, emit
 
-from .unpack import api
+from unpack import api
 from .views import input_view, results_view
 
 def main():

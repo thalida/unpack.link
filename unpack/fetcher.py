@@ -40,9 +40,8 @@ class Fetcher:
 
         self.node_url_hash = UnpackHelpers.get_url_hash(body['node_url'])
         self.is_parent_node = self.source_node_uuid is None
-
-        ch.basic_ack(delivery_tag=method.delivery_tag)
         self.walk_node_tree()
+        ch.basic_ack(delivery_tag=method.delivery_tag)
 
 
     def walk_node_tree(self):
@@ -100,7 +99,7 @@ class Fetcher:
             new_state['level'] += 1
 
             channel.basic_publish(
-                exchange='shard.workers',
+                exchange='',
                 routing_key='fetcher',
                 body=json.dumps({
                     'node_uuid': target_node_uuid,
@@ -117,7 +116,7 @@ class Fetcher:
     @staticmethod
     def broadcast(node_url=None, source_node_uuid=None, target_node_uuid=None, origin_source_url=None, state=None):
         channel.basic_publish(
-            exchange='shard.workers',
+            exchange='',
             routing_key='broadcaster',
             body=json.dumps({
                 'node_url': node_url,
@@ -147,14 +146,11 @@ def main():
 
     connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
     channel = connection.channel()
-    channel.exchange_declare(exchange='shard.workers', exchange_type='direct')
-    result = channel.queue_declare(queue='', exclusive=True)
-    queue_name = result.method.queue
-    channel.queue_bind(exchange='shard.workers', queue=queue_name, routing_key='fetcher')
+    channel.queue_declare(queue='fetcher', durable=True)
     print(' [*] Waiting for Fetcher messages. To exit press CTRL+C')
 
     channel.basic_qos(prefetch_count=1)
-    channel.basic_consume(queue=queue_name, on_message_callback=Fetcher, auto_ack=False)
+    channel.basic_consume(queue='fetcher', on_message_callback=Fetcher)
 
     channel.start_consuming()
 

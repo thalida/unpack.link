@@ -32,7 +32,7 @@ class TypeBase:
         return node_details
 
     @classmethod
-    def fetch(cls, node_uuid, node_url, url_matches=None, force_update=False):
+    def fetch(cls, node_uuid, node_url, url_matches=None, force_update=True):
         is_from_db = True
         raw_node_details, raw_links = cls.get_node_and_links_from_db(node_uuid, node_url)
 
@@ -74,10 +74,12 @@ class TypeBase:
             raw_links = []
         else:
             sel = Selector(text=page_source)
-            page_links = sel.css('*::attr(href)').getall()
 
             node_data = {'url_matches': url_matches, 'page_source': page_source}
             node_details = cls.setup_node_details(node_data=node_data)
-            raw_links = [{'target_node_url': urljoin(node_url, link), 'link_type': 'link'} for link in page_links]
+
+            page_links = set(sel.css('*::attr(href)').getall())
+            abs_page_links = [urljoin(node_url, link) for link in page_links]
+            raw_links = [{'target_node_url': link, 'link_type': 'link'} for link in abs_page_links]
 
         return node_details, raw_links

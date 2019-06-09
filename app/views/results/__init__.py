@@ -4,7 +4,7 @@ import logging
 
 from flask import Blueprint, request, abort, render_template
 
-from ...unpack.helpers import UnpackHelpers
+from unpack.helpers import UnpackHelpers
 
 logger = logging.getLogger(__name__)
 results_view = Blueprint(

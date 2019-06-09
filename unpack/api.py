@@ -31,13 +31,13 @@ def unpack():
         node_url = request.json.get('url')
         connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
         channel = connection.channel()
-        channel.exchange_declare(exchange='shard.workers', exchange_type='direct')
+        channel.queue_declare(queue='fetcher', durable=True)
         channel.basic_publish(
-            exchange='shard.workers',
+            exchange='',
             routing_key='fetcher',
             body=json.dumps({
                 'node_url': node_url,
-                'rules': {'max_link_depth': 2}
+                'rules': {'max_link_depth': 1}
             }),
             properties=pika.BasicProperties(
                 delivery_mode=2,  # make message persistent

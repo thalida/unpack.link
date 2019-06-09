@@ -12,9 +12,9 @@ if args.action == 'web-server':
     app.web_server.main()
 
 elif args.action == 'broadcaster':
-    import app.unpack.broadcaster
-    app.unpack.broadcaster.main()
+    import unpack.broadcaster
+    unpack.broadcaster.main()
 
 elif args.action == 'fetcher':
-    import app.unpack.fetcher
-    app.unpack.fetcher.main()
+    import unpack.fetcher
+    unpack.fetcher.main()
