@@ -32,13 +32,7 @@ class TypeBase:
         return node_details
 
     @classmethod
-    def fetch(cls, node_uuid, node_url, url_matches=None, force_update=True):
-        # TODO: 25 MARCH 2019 [TNOEL]
-        # Add in fetching using the two libraries below
-        # Figure out how to spin off new jobs to request children
-        # https://2.python-requests.org/en/master/
-        # https://github.com/scrapy/parsel
-
+    def fetch(cls, node_uuid, node_url, url_matches=None, force_update=False):
         is_from_db = True
         raw_node_details, raw_links = cls.get_node_and_links_from_db(node_uuid, node_url)
 

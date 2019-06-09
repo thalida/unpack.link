@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "43f29c5b532689e24e5c23aa00c5c7d74987bc62876f07687fb53764e213d0bd"
+            "sha256": "ea85f58c61e0fb11dac3ca03b164bfab8f9ea0a779762c6e9f423ef1ae298760"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -22,13 +22,6 @@
                 "sha256:cbb6f87d53cac612a594f982b717cc1c54c6a1e17943a0a0d32dc6cc9e2120c8"
             ],
             "version": "==2.5.0"
-        },
-        "arrow": {
-            "hashes": [
-                "sha256:03404b624e89ac5e4fc19c52045fa0f3203419fd4dd64f6e8958c522580a574a",
-                "sha256:41be7ea4c53c2cf57bf30f2d614f60c411160133f7a0a8c49111c30fb7e725b5"
-            ],
-            "version": "==0.14.2"
         },
         "certifi": {
             "hashes": [
@@ -274,13 +267,6 @@
             "index": "pypi",
             "version": "==2.8.2"
         },
-        "python-dateutil": {
-            "hashes": [
-                "sha256:7e6584c74aeed623791615e26efd690f29817a27c73085b78e4bad02493df2fb",
-                "sha256:c89805f6f4d64db21ed966fda138f8a5ed7a4fdbc1a8ee329ce1b74e3c74da9e"
-            ],
-            "version": "==2.8.0"
-        },
         "python-engineio": {
             "hashes": [
                 "sha256:9e4e7109d05d80ce5414f13b16f66725c2b5d574099fd43d37b024e7ea1c4354",
@@ -295,14 +281,6 @@
             ],
             "version": "==4.1.0"
         },
-        "redis": {
-            "hashes": [
-                "sha256:6946b5dca72e86103edc8033019cc3814c031232d339d5f4533b02ea85685175",
-                "sha256:8ca418d2ddca1b1a850afa1680a7d2fd1f3322739271de4b704e0d4668449273"
-            ],
-            "index": "pypi",
-            "version": "==3.2.1"
-        },
         "requests": {
             "hashes": [
                 "sha256:11e007a8a2aa0323f5a921e9e6a2d7e4e67d9877e85773fba9ba6419025cbeb4",
@@ -316,20 +294,6 @@
                 "sha256:d3ed0c8f2e3bbc6b344fa63d6f933745ab394469da38db16bdddb461c7e25140"
             ],
             "version": "==1.2.0"
-        },
-        "rq": {
-            "hashes": [
-                "sha256:22de332ed7e061634eb893dc8cc9ca96c8641480f46c403cabef8d43a2eca867"
-            ],
-            "index": "pypi",
-            "version": "==1.0"
-        },
-        "rq-dashboard": {
-            "hashes": [
-                "sha256:dac6efbc9c01b6fbe317c566f5f22bb1c0815dac1fbcef6d203cfa072586d764"
-            ],
-            "index": "pypi",
-            "version": "==0.5.1"
         },
         "selenium": {
             "hashes": [

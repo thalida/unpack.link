@@ -15,10 +15,6 @@ api = Blueprint(
     static_folder='../'
 )
 
-connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
-channel = connection.channel()
-channel.exchange_declare(exchange='shard.workers', exchange_type='direct')
-
 @api.route('/unpack/event_keys', methods=['GET'])
 def event_keys():
     try:
@@ -33,6 +29,9 @@ def event_keys():
 def unpack():
     try:
         node_url = request.json.get('url')
+        connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+        channel = connection.channel()
+        channel.exchange_declare(exchange='shard.workers', exchange_type='direct')
         channel.basic_publish(
             exchange='shard.workers',
             routing_key='fetcher',
@@ -43,7 +42,7 @@ def unpack():
             properties=pika.BasicProperties(
                 delivery_mode=2,  # make message persistent
             ))
-
+        connection.close()
         return jsonify({'success': True})
     except Exception:
         return jsonify({'success': False})

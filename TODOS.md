@@ -1,5 +1,16 @@
 # TODO
 
+## 8 June
+[] Set general staleness checks, type has a default, rules can override
+[] Start rendering nodes
+    [] Setup vue
+    [] Setup typescript
+[] Move upnack folder to top level
+[] Add better comments and documentation
+    [] Figure out one of those self documenting sites (sphinx)
+
+
+## Some Date
 - flask app
 - pass url to unpack.py api call
 - setup json format for data
@@ -21,8 +32,6 @@ else
 if url
     id = get id for url
     redirect to id
-
-
 
 pk_id <==> path
 pk_id, date, path, meta
