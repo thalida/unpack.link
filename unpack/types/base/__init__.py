@@ -38,28 +38,6 @@ class TypeBase:
 
         return node_details
 
-    # upated on 2
-    # refresh every 2
-    # should refresh
-    #
-    # current time is
-    #   4   should web
-    #   6   should web
-    #   3   should db
-    #   2   should db
-    #
-    #   current time < updated on + refresh
-    #
-    #   4 <  2 + 2 # False
-    #   6 < 2 + 2 # False
-    #   3 < 2 + 2 # True
-    #   2 < 2 + 2 # True
-    #
-    #   2 < 2
-    #   4 < 2
-    #   1 < 2
-    #   0 < 2
-
     @classmethod
     def fetch(cls, node_uuid, node_url, url_matches=None, rules=None):
         rules = {**cls.DEFAULT_RULES, **rules}
@@ -71,7 +49,8 @@ class TypeBase:
             is_from_db = False
             raw_node_details, raw_links = cls.get_node_and_links_from_web(node_url, url_matches=url_matches)
         else:
-            min_update_date = datetime.datetime.now() - datetime.timedelta(seconds=rules['refresh_after'])
+            now = datetime.datetime.now()
+            min_update_date = now - datetime.timedelta(seconds=rules['refresh_after'])
             raw_node_details = UnpackHelpers.fetch_node_metadata(node_uuid, min_update_date=min_update_date)
 
             if raw_node_details is None:

@@ -1,3 +1,6 @@
+import os
+os.environ['TZ'] = 'UTC'
+
 from pprint import pprint
 import json
 

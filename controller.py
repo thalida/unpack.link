@@ -1,3 +1,6 @@
+import os
+os.environ['TZ'] = 'UTC'
+
 import argparse
 parser = argparse.ArgumentParser(description='Start an unpack queue...')
 parser.add_argument('action',
