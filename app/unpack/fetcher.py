@@ -62,6 +62,7 @@ class Fetcher:
             source_node_uuid=self.source_node_uuid,
             target_node_uuid=self.node_uuid,
             origin_source_url=self.origin_source_url,
+            state=self.state,
         )
 
         if node_details['num_branches'] == 0:
@@ -85,6 +86,16 @@ class Fetcher:
                 weight=1,
             )
 
+            origin_source_uuid = UnpackHelpers.fetch_node_uuid(self.origin_source_url)
+            is_found_in_path = UnpackHelpers.check_target_node_in_path(
+                origin_source_uuid,
+                self.node_uuid,
+                target_node_uuid
+            )
+
+            if target_url == self.node_url or is_found_in_path:
+                continue
+
             new_state = self.state.copy()
             new_state['level'] += 1
 
@@ -104,7 +115,7 @@ class Fetcher:
                 ))
 
     @staticmethod
-    def broadcast(node_url=None, source_node_uuid=None, target_node_uuid=None, origin_source_url=None):
+    def broadcast(node_url=None, source_node_uuid=None, target_node_uuid=None, origin_source_url=None, state=None):
         channel.basic_publish(
             exchange='shard.workers',
             routing_key='broadcaster',
@@ -113,6 +124,7 @@ class Fetcher:
                 'source_node_uuid': source_node_uuid,
                 'target_node_uuid': target_node_uuid,
                 'origin_source_url': origin_source_url,
+                'state': state,
             }, default=str),
             properties=pika.BasicProperties(
                 delivery_mode=2,  # make message persistent

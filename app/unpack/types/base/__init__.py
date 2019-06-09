@@ -1,7 +1,9 @@
 import re
 from pprint import pprint
 import json
+from urllib.parse import urljoin
 
+import selenium.common.exceptions
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
@@ -30,7 +32,7 @@ class TypeBase:
         return node_details
 
     @classmethod
-    def fetch(cls, node_uuid, node_url, url_matches=None, force_update=False):
+    def fetch(cls, node_uuid, node_url, url_matches=None, force_update=True):
         # TODO: 25 MARCH 2019 [TNOEL]
         # Add in fetching using the two libraries below
         # Figure out how to spin off new jobs to request children
@@ -65,16 +67,23 @@ class TypeBase:
 
     @classmethod
     def get_node_and_links_from_web(cls, node_url, url_matches=None):
-        driver = webdriver.Chrome(ChromeDriverManager('2.42').install(), chrome_options=options)
-        driver.get(node_url)
-        page_source = driver.page_source
-        driver.close()
+        try:
+            driver = webdriver.Chrome(ChromeDriverManager('2.42').install(), chrome_options=options)
+            driver.get(node_url)
+            page_source = driver.page_source
+            driver.close()
+        except selenium.common.exceptions.WebDriverException as e:
+            node_details = cls.setup_node_details(node_data=str(e), is_error=True)
+            raw_links = []
+        except Exception as e:
+            node_details = cls.setup_node_details(node_data=str(e), is_error=True)
+            raw_links = []
+        else:
+            sel = Selector(text=page_source)
+            page_links = sel.css('*::attr(href)').getall()
 
-        sel = Selector(text=page_source)
-        page_links = sel.css('*::attr(href)').getall()
-
-        node_data = {'url_matches': url_matches, 'page_source': page_source}
-        node_details = cls.setup_node_details(node_data=node_data)
-        raw_links = [{'target_node_url': link, 'link_type': 'link'} for link in page_links]
+            node_data = {'url_matches': url_matches, 'page_source': page_source}
+            node_details = cls.setup_node_details(node_data=node_data)
+            raw_links = [{'target_node_url': urljoin(node_url, link), 'link_type': 'link'} for link in page_links]
 
         return node_details, raw_links

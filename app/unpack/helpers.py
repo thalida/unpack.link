@@ -59,9 +59,12 @@ class UnpackHelpers:
         return response
 
     @staticmethod
-    def get_paths_for_node(node_uuid, parent_node_uuid=None, paths=None):
+    def get_paths_for_node(node_uuid, parent_node_uuid=None, stop_node_uuid=None, paths=None):
         if paths is None:
             paths = []
+
+        if node_uuid == stop_node_uuid:
+            return paths
 
         links = UnpackHelpers.fetch_links_by_source(node_uuid, parent_node_uuid=parent_node_uuid)
 
@@ -76,10 +79,20 @@ class UnpackHelpers:
             paths = UnpackHelpers.get_paths_for_node(
                 link['target_node_uuid'],
                 parent_node_uuid=link['source_node_uuid'],
+                stop_node_uuid=stop_node_uuid,
                 paths=paths
             )
 
         return paths
+
+    @staticmethod
+    def check_target_node_in_path(start_node_uuid, end_node_uuid, target_node_uuid):
+        paths = UnpackHelpers.get_paths_for_node(start_node_uuid, stop_node_uuid=end_node_uuid)
+        for path in paths:
+            if path['target_node_uuid'] == target_node_uuid:
+                return True
+
+        return False
 
     @staticmethod
     def store_node(node_url):
@@ -168,8 +181,8 @@ class UnpackHelpers:
                     )
                     ORDER BY l.updated_on DESC
                     """
-            other_uuid = parent_node_uuid if parent_node_uuid is not None else source_node_uuid
-            query_data = (source_node_uuid,other_uuid,)
+            parent_node_uuid = parent_node_uuid if parent_node_uuid is not None else source_node_uuid
+            query_data = (source_node_uuid,parent_node_uuid,)
             res = UnpackHelpers.execute_sql('fetchall', query, query_data)
             return res
         except Exception:

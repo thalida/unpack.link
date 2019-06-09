@@ -33,12 +33,12 @@ def event_keys():
 def unpack():
     try:
         node_url = request.json.get('url')
-        print('we in this', node_url)
         channel.basic_publish(
             exchange='shard.workers',
             routing_key='fetcher',
             body=json.dumps({
                 'node_url': node_url,
+                'rules': {'max_link_depth': 2}
             }),
             properties=pika.BasicProperties(
                 delivery_mode=2,  # make message persistent
