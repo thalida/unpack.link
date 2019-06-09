@@ -1,3 +1,17 @@
+"""Unpack
+
+App Description
+
+Submodules
+==========
+
+.. autosummary::
+    :toctree: _autosummary
+
+    views
+    web_server
+"""
+
 import hashlib
 
 ENV_VARS = {

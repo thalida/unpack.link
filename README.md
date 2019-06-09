@@ -10,6 +10,10 @@ Fetcher Queue: `python contorller.py fetcher`
 
 Broadcaster Queue: `python contorller.py broadcaster`
 
+## Documenation
+
+Rebuild Docs: `make html -C docs/`
+
 ## Examples
 ### Twitter
 ```
@@ -30,8 +34,8 @@ deleted_quoted_tweet = 946795191784132610
     - [ ] Setup vue.
     - [ ] Setup typescript
 - [x] Move upnack folder to top level
-- [ ] Add better comments and documentation
-    - [ ] Figure out one of those self documenting sites (sphinx)
+- [x] Add better comments and documentation
+    - [x] Figure out one of those self documenting sites (sphinx)
 
 
 ## Some Date

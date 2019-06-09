@@ -14,6 +14,8 @@ webdriver-manager = "*"
 parsel = "*"
 pika = "*"
 kombu = "*"
+sphinx = "*"
+sphinx-rtd-theme = "*"
 
 [dev-packages]
 
