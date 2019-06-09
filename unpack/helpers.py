@@ -1,3 +1,4 @@
+import hashlib
 import os
 import json
 import logging
@@ -7,10 +8,16 @@ import uuid
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-from app import ENV_VARS, hash_url
-
 logger = logging.getLogger(__name__)
 
+ENV_VARS = {
+    'DB': {
+        'HOST': 'UNPACK_DB_HOST',
+        'NAME': 'UNPACK_DB_NAME',
+        'USER': 'UNPACK_DB_USER',
+        'PASSWORD': 'UNPACK_DB_PASSWORD',
+    }
+}
 
 class UnpackHelpers:
     DB_CREDS = {
@@ -24,8 +31,12 @@ class UnpackHelpers:
     DEFAULT_LINK_TYPE = 0
 
     @staticmethod
+    def hash_url(url):
+        return hashlib.md5(str(url).encode('utf-8')).hexdigest()
+
+    @staticmethod
     def get_url_hash(node_url):
-        return hash_url(node_url)
+        return UnpackHelpers.hash_url(node_url)
 
     @staticmethod
     def get_event_keys(node_url_hash=None, node_url=None, node_uuid=None):

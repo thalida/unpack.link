@@ -6,7 +6,7 @@ Attributes
 ==========
 os.environ['TZ'] : UTC
     Force server to use UTC time
-args : 'web-server', 'broadcaster', 'fetcher'
+args : 'api-server', 'broadcaster', 'fetcher'
     Available actions to trigger
 """
 
@@ -18,21 +18,21 @@ import argparse
 def main():
     parser = argparse.ArgumentParser(description='Start an unpack queue...')
     parser.add_argument('action',
-                        choices=['web-server', 'broadcaster', 'fetcher'],
+                        choices=['api-server', 'broadcaster', 'fetcher'],
                         help='Unpack queue name')
     args = parser.parse_args()
 
-    if args.action == 'web-server':
-        import app.web_server
-        app.web_server.main()
+    if args.action == 'api-server':
+        import unpack.api.server
+        unpack.api.server.main()
 
     elif args.action == 'broadcaster':
-        import unpack.broadcaster
-        unpack.broadcaster.main()
+        import unpack.queues.broadcaster
+        unpack.queues.broadcaster.main()
 
     elif args.action == 'fetcher':
-        import unpack.fetcher
-        unpack.fetcher.main()
+        import unpack.queues.fetcher
+        unpack.queues.fetcher.main()
 
 if __name__ == '__main__':
     main()
