@@ -16,6 +16,7 @@ pika = "*"
 kombu = "*"
 sphinx = "*"
 sphinx-rtd-theme = "*"
+flask-cors = "*"
 
 [dev-packages]
 pylint = "*"

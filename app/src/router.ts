@@ -14,11 +14,23 @@ export default new Router({
       component: Home,
     },
     {
+      path: '/map',
+      name: 'map',
+      component: () => import(/* webpackChunkName: "map" */ './views/Map.vue'),
+      props: (route) => ({ url: route.query.url }),
+      beforeEnter: (to, from, next) => {
+        const url: string = to.query.url.toString() || '';
+        const urlLen: number = url.length;
+        if (typeof url === 'string' && urlLen > 0) {
+          return next();
+        }
+
+        return next('/');
+      },
+    },
+    {
       path: '/about',
       name: 'about',
-      // route level code-splitting
-      // this generates a separate chunk (about.[hash].js) for this route
-      // which is lazy-loaded when the route is visited.
       component: () => import(/* webpackChunkName: "about" */ './views/About.vue'),
     },
   ],

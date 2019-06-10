@@ -15,7 +15,7 @@ api_routes = Blueprint(
     static_folder='../'
 )
 
-@api_routes.route('/unpack/event_keys', methods=['GET'])
+@api_routes.route('/api/event_keys', methods=['GET'])
 def event_keys():
     try:
         node_url = request.args.get('url')
@@ -25,7 +25,7 @@ def event_keys():
         logger.exception('Error GET event_keys')
         abort(500)
 
-@api_routes.route('/unpack/start', methods=['POST'])
+@api_routes.route('/api/start', methods=['POST'])
 def unpack():
     try:
         node_url = request.json.get('url')
