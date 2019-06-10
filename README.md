@@ -38,12 +38,13 @@ deleted_quoted_tweet = 946795191784132610
     - [x] Setup vue.
     - [x] Setup typescript
     - [ ] Create new index view
-        - [ ] Form enter a url, get redirected to results view
+        - [x] Form enter a url, get redirected to results view
+        - [ ] Use custom validation messages/display
     - [ ] Create new results view
-        - [ ] has url field (silent refreshing(?))
+        - [x] has url field (silent refreshing(?))
         - [ ] has query controls
-        - [ ] hit api endpoints
-        - [ ] socketio setup
+        - [x] hit api endpoints
+        - [x] socketio setup
         - [ ] render node on socket push
         - [ ] setup proper storage
 - [x] Move upnack folder to top level
