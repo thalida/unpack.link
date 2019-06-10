@@ -45,7 +45,7 @@ deleted_quoted_tweet = 946795191784132610
         - [ ] has query controls
         - [x] hit api endpoints
         - [x] socketio setup
-        - [ ] render node on socket push
+        - [x] render node on socket push
         - [ ] setup proper storage
 - [x] Move upnack folder to top level
 - [ ] Store a screenshot of the fetched site

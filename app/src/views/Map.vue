@@ -1,8 +1,19 @@
 <template>
-    <div class="map">
-        Map
-        <p>{{ url }}</p>
-    </div>
+	<div class="map">
+		<form id="input-form" @submit.prevent>
+			<input
+				v-model="inputUrl"
+				type="url"
+				placeholder="http://"
+				required />
+			<button type="submit" @click="handleFormSubmit">unpack</button>
+		</form>
+		<div v-for="(link, index) in links" v-bind:key="index">
+			<span v-if="link.hasSource">{{ link['source']['node_url'] }}</span>
+			to
+			<span v-if="link.hasTarget">{{ link['target']['node_url'] }}</span>
+		</div>
+	</div>
 </template>
 
 <script lang="ts">
@@ -19,50 +30,70 @@ interface EventKeys {
 
 @Component
 export default class Map extends Vue {
-    eventKeys: EventKeys | null = null;
-    host: string = 'http://0.0.0.0:5001';
+  eventKeys: EventKeys | null = null;
+  inputUrl: string | null = null;
+  host: string = 'http://0.0.0.0:5001';
+  links: any[] = [];
 
-    @Prop() private url!: string;
+  @Prop() private url!: string;
 
-    constructor() {
-        super();
+  created() {
+    this.getEventKeys();
+    this.inputUrl = this.url;
+  }
+
+  getEventKeys() {
+    axios.get(`${this.host}/api/event_keys`, {params: {url: this.url}})
+      .then(this.handleGetEventKeys);
+  }
+
+  startListening() {
+    if (this.eventKeys === null) {
+      return;
     }
 
-    created() {
-        this.getEventKeys();
+    socket.on(this.eventKeys!.TREE_UPDATE, this.handleTreeUpdate);
+  }
+
+  startUnpacking() {
+    axios.post(`${this.host}/api/start`, {url: this.url});
+  }
+
+  handleGetEventKeys(response: any) {
+    this.eventKeys = response.data;
+    this.startListening();
+    this.startUnpacking();
+  }
+
+  handleTreeUpdate(node: any) {
+    const formattedNode = this.formatNode(node);
+    this.links.push(formattedNode);
+  }
+
+  handleFormSubmit() {
+    this.$router.push({
+      name: 'map',
+      query: {
+        url: this.inputUrl as string,
+      },
+    });
+  }
+
+  formatNode(node: any) {
+    let formattedNode = null;
+
+    if (typeof node === 'object') {
+      formattedNode = JSON.parse(JSON.stringify(node));
+    } else {
+      formattedNode = JSON.parse(node);
     }
 
-    getEventKeys() {
-        axios.get(`${this.host}/api/event_keys`, {params: {url: this.url}})
-            .then(this.handleGetEventKeys);
-    }
+    formattedNode.hasSource = typeof formattedNode.source !== 'undefined' && formattedNode.source !== null;
+    formattedNode.hasTarget = typeof formattedNode.target !== 'undefined' && formattedNode.target !== null;
 
-    handleGetEventKeys(response: any) {
-        this.eventKeys = response.data;
-        this.startListening();
-        this.startUnpacking();
-    }
-
-    startListening() {
-        if (this.eventKeys === null) {
-            return;
-        }
-
-        socket.on(this.eventKeys!.TREE_UPDATE, this.handleTreeUpdate);
-    }
-
-    handleTreeUpdate(node: any) {
-        console.log(node);
-    }
-
-    startUnpacking() {
-        axios.post(`${this.host}/api/start`, {url: this.url});
-    }
+    return formattedNode;
+  }
 }
 </script>
 
-<style lang="scss">
-.map {
-    background: blue;
-}
-</style>
+<style lang="scss"></style>

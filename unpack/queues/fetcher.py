@@ -61,6 +61,9 @@ class Fetcher:
 
 
     def walk_node_tree(self):
+        if self.node_url is None:
+            return;
+
         type_cls, node_url_match = Fetcher.get_node_type_class_by_url(self.node_url)
         node_details, raw_links = type_cls.fetch(self.node_uuid, self.node_url, url_matches=node_url_match, rules=self.rules)
 
@@ -73,7 +76,6 @@ class Fetcher:
             )
 
         Fetcher.broadcast(
-            node_url=self.node_url,
             source_node_uuid=self.source_node_uuid,
             target_node_uuid=self.node_uuid,
             origin_source_url=self.origin_source_url,
@@ -130,12 +132,11 @@ class Fetcher:
                 ))
 
     @staticmethod
-    def broadcast(node_url=None, source_node_uuid=None, target_node_uuid=None, origin_source_url=None, state=None):
+    def broadcast(source_node_uuid=None, target_node_uuid=None, origin_source_url=None, state=None):
         channel.basic_publish(
             exchange='',
             routing_key='broadcaster',
             body=json.dumps({
-                'node_url': node_url,
                 'source_node_uuid': source_node_uuid,
                 'target_node_uuid': target_node_uuid,
                 'origin_source_url': origin_source_url,
@@ -147,12 +148,18 @@ class Fetcher:
 
     @staticmethod
     def get_node_type_class_by_url(node_url):
+        type_cls = None
+        node_match = None
+
         for url_type in Fetcher.NODE_TYPES:
-            matches = url_type.URL_PATTERN.findall(node_url)
-            if len(matches) > 0:
-                type_cls = url_type
-                node_match = matches[0]
-                break
+            try:
+                matches = url_type.URL_PATTERN.findall(node_url)
+                if len(matches) > 0:
+                    type_cls = url_type
+                    node_match = matches[0]
+                    break
+            except TypeError as e:
+                print(node_url, e)
 
         return type_cls, node_match
 

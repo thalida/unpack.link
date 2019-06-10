@@ -19,6 +19,15 @@ export default new Router({
       component: () => import(/* webpackChunkName: "map" */ './views/Map.vue'),
       props: (route) => ({ url: route.query.url }),
       beforeEnter: (to, from, next) => {
+        if (
+          typeof to.query === 'undefined'
+          || to.query === null
+          || typeof to.query.url === 'undefined'
+          || to.query.url === null
+        ) {
+          return next('/');
+        }
+
         const url: string = to.query.url.toString() || '';
         const urlLen: number = url.length;
         if (typeof url === 'string' && urlLen > 0) {
