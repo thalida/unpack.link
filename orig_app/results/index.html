@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}
+#{{post.id}}
+{% endblock %}
+
+{% block styles %}
+    <link href="{{url_for('static', filename='results/index.css', v='1')}}" rel="stylesheet">
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js" type="text/javascript"></script>
+<script src="https://d3js.org/d3.v5.min.js"></script>
+<!-- <script src="http://bl.ocks.org/syntagmatic/raw/3341641/render-queue.js"></script> -->
+<script src="{{url_for('static', filename='results/index.js', v='2')}}" type="text/javascript"></script>
+{% endblock %}
+
+{% block body %}
+Results Index {{url_hash}}
+<svg width="960" height="600"></svg>
+{% endblock %}
