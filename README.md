@@ -58,6 +58,8 @@ deleted_quoted_tweet = 946795191784132610
 - [x] Move upnack folder to top level
 - [ ] Cache db queries
 - [ ] Don't fetch css or fonts
+- [ ] Don't store site contents
+- [ ] Store link index on page
 - [ ] Add better comments and documentation
     - [x] Figure out one of those self documenting sites (sphinx)
     - [ ] Vue/JS autodocs(?)
