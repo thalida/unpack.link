@@ -20,8 +20,8 @@ export default class Home extends Vue {
 
   handleSubmit() {
     this.$router.push({
-      name: 'map',
-      query: {
+      name: 'results',
+      params: {
         url: this.url as string,
       },
     });

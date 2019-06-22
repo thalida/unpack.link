@@ -70,11 +70,11 @@ class UnpackHelpers:
         return response
 
     @staticmethod
-    def get_paths_for_node(node_uuid, parent_node_uuid=None, stop_node_uuid=None, paths=None):
+    def get_paths_for_node(node_uuid, parent_node_uuid=None, stop_node_uuid=None, stop_level=None, curr_level=0, paths=None):
         if paths is None:
             paths = []
 
-        if node_uuid == stop_node_uuid:
+        if (node_uuid == stop_node_uuid) or (stop_level and curr_level >= stop_level):
             return paths
 
         links = UnpackHelpers.fetch_links_by_source(node_uuid, parent_node_uuid=parent_node_uuid)
@@ -82,6 +82,7 @@ class UnpackHelpers:
         if not links:
             return paths
 
+        curr_level += 1
         for link in links:
             if link in paths:
                 continue
@@ -91,16 +92,32 @@ class UnpackHelpers:
                 link['target_node_uuid'],
                 parent_node_uuid=link['source_node_uuid'],
                 stop_node_uuid=stop_node_uuid,
+                curr_level=curr_level,
+                stop_level=stop_level,
                 paths=paths
             )
 
         return paths
 
+    # This function is currently not used
     @staticmethod
     def check_target_node_in_path(start_node_uuid, end_node_uuid, target_node_uuid):
         paths = UnpackHelpers.get_paths_for_node(start_node_uuid, stop_node_uuid=end_node_uuid)
         for path in paths:
             if path['target_node_uuid'] == target_node_uuid:
+                return True
+
+        return False
+
+    @staticmethod
+    def check_target_node_in_tree(start_node_uuid, target_node_uuid, level, min_count=1):
+        paths = UnpackHelpers.get_paths_for_node(start_node_uuid, stop_level=level)
+        num_times_found = 0
+        for path in paths:
+            if path['target_node_uuid'] == target_node_uuid:
+                num_times_found += 1
+
+            if num_times_found >= min_count:
                 return True
 
         return False
@@ -158,6 +175,42 @@ class UnpackHelpers:
         except Exception:
             UnpackHelpers.raise_error(
                 'Unpack: Error inserting a new link: {source} to {target}',
+                source=source_node_uuid,
+                target=target_node_uuid
+            )
+
+    @staticmethod
+    def store_active_job(source_node_uuid, target_node_uuid):
+        try:
+            query = """
+                    INSERT INTO active_job (source_node_uuid, target_node_uuid)
+                    VALUES (%s, %s)
+                    ON CONFLICT (source_node_uuid, target_node_uuid) DO NOTHING
+                    RETURNING (source_node_uuid, target_node_uuid)
+                    """
+            data = (source_node_uuid, target_node_uuid)
+            return UnpackHelpers.execute_sql('fetchone', query, data)
+        except Exception:
+            UnpackHelpers.raise_error(
+                'Unpack: Error inserting a new active job: {source} to {target}',
+                source=source_node_uuid,
+                target=target_node_uuid
+            )
+
+    @staticmethod
+    def remove_active_job(source_node_uuid, target_node_uuid):
+        try:
+            query = """
+                    DELETE FROM active_job
+                    WHERE source_node_uuid = %s
+                      AND target_node_uuid = %s
+                    RETURNING (source_node_uuid, target_node_uuid)
+                    """
+            data = (source_node_uuid, target_node_uuid)
+            return UnpackHelpers.execute_sql('fetchone', query, data)
+        except Exception:
+            UnpackHelpers.raise_error(
+                'Unpack: Error deleting active job of {source} to {target}',
                 source=source_node_uuid,
                 target=target_node_uuid
             )
@@ -261,16 +314,6 @@ class UnpackHelpers:
                 'Unpack: Error fetching node url for uuid: {node_uuid}',
                 node_uuid=node_uuid
             )
-
-    @staticmethod
-    def find_job_by_node_uuid(queued_jobs, node_uuid):
-        found_job = None
-        for job in queued_jobs:
-            if job.meta.get('node_uuid') == node_uuid:
-                found_job = job
-                break
-
-        return found_job
 
     @staticmethod
     def raise_error(msg, **kwargs):

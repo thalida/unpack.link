@@ -4,16 +4,18 @@ import json
 from urllib.parse import urljoin
 import datetime
 
-import selenium.common.exceptions
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
+
+import requests
+# import selenium.common.exceptions
+# from selenium import webdriver
+# from selenium.webdriver.chrome.options import Options
+# from webdriver_manager.chrome import ChromeDriverManager
 from parsel import Selector
 
 from ...helpers import UnpackHelpers
 
-options = Options()
-options.headless = True
+# options = Options()
+# options.headless = True
 
 class TypeBase:
     TYPE = 'base'
@@ -26,12 +28,10 @@ class TypeBase:
     }
 
     @classmethod
-    def setup_node_details(cls, node_data=None, branch_nodes=[], is_error=False, is_from_db=False):
+    def setup_node_details(cls, node_data=None, is_error=False, is_from_db=False):
         node_details = {
             'node_type': cls.TYPE,
             'data': json.dumps(node_data, default=str),
-            'branch_nodes': branch_nodes,
-            'num_branches': len(branch_nodes),
             'is_error': is_error,
             'is_from_db': is_from_db,
         }
@@ -62,7 +62,6 @@ class TypeBase:
 
         node_details = cls.setup_node_details(
             node_data=raw_node_details.get('data'),
-            branch_nodes=raw_links,
             is_error=raw_node_details.get('is_error', False),
             is_from_db=is_from_db,
         )
@@ -82,13 +81,14 @@ class TypeBase:
     @classmethod
     def get_node_and_links_from_web(cls, node_url, url_matches=None):
         try:
-            driver = webdriver.Chrome(ChromeDriverManager('2.42').install(), chrome_options=options)
-            driver.get(node_url)
-            page_source = driver.page_source
-            driver.close()
-        except selenium.common.exceptions.WebDriverException as e:
-            node_details = cls.setup_node_details(node_data=str(e), is_error=True)
-            raw_links = []
+            page_source = requests.get(node_url).text
+            # driver = webdriver.Chrome(ChromeDriverManager('2.42').install(), chrome_options=options)
+            # driver.get(node_url)
+            # page_source = driver.page_source
+            # driver.close()
+        # except selenium.common.exceptions.WebDriverException as e:
+        #     node_details = cls.setup_node_details(node_data=str(e), is_error=True)
+        #     raw_links = []
         except Exception as e:
             node_details = cls.setup_node_details(node_data=str(e), is_error=True)
             raw_links = []
@@ -98,8 +98,24 @@ class TypeBase:
             node_data = {'url_matches': url_matches, 'page_source': page_source}
             node_details = cls.setup_node_details(node_data=node_data)
 
-            page_links = set(sel.css('*::attr(href)').getall())
-            abs_page_links = [urljoin(node_url, link) for link in page_links]
-            raw_links = [{'target_node_url': link, 'link_type': 'link'} for link in abs_page_links]
+            page_links = sel.css('body *::attr(href)').getall()
+            num_page_links = len(page_links)
+            found_links = {}
+            raw_links = []
+            num_raw_links = 0
+            for idx, link in enumerate(page_links):
+                if link in found_links:
+                    found_idx = found_links.get(link)
+                    raw_links[found_idx]['weight'] += 1
+                    continue
+
+                raw_links.append({
+                    'target_node_url': urljoin(node_url, link),
+                    'link_type': 'link',
+                    'weight': num_page_links - idx
+                })
+
+                found_links[link] = num_raw_links
+                num_raw_links += 1
 
         return node_details, raw_links

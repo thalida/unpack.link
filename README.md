@@ -47,8 +47,16 @@ deleted_quoted_tweet = 946795191784132610
         - [x] socketio setup
         - [x] render node on socket push
         - [ ] setup proper storage
+    - [ ] Results
+        - [ ] Render each link in it's level
+        - [ ] Organize Level
+            - [ ] not from same domain, then same domain
+            - [ ] order both by order found on page
+        - [ ] Add checkbox to show the links available with that link
+    - [ ] Site Data
+        - [ ] fetch site data for node on quick view load
 - [x] Move upnack folder to top level
-- [ ] Store a screenshot of the fetched site
+- [ ] Cache db queries
 - [ ] Don't fetch css or fonts
 - [ ] Add better comments and documentation
     - [x] Figure out one of those self documenting sites (sphinx)

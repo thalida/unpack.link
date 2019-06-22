@@ -34,7 +34,7 @@ class TypeTwitter(TypeBase):
             for m in media:
                 links.append({
                     'target_node_url': m['media_url_https'],
-                    'link_type': 'link'
+                    'link_type': 'link',
                 })
 
             # Get tweet external links
@@ -80,4 +80,3 @@ class TypeTwitter(TypeBase):
             tweet_id = tweet.get('quoted_status_id')
 
         return tweet_id
-

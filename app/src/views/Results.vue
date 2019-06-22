@@ -8,11 +8,25 @@
 				required />
 			<button type="submit" @click="handleFormSubmit">unpack</button>
 		</form>
-		<div v-for="(link, index) in links" v-bind:key="index">
-			<span v-if="link.hasSource">{{ link['source']['node_url'] }}</span>
-			to
-			<span v-if="link.hasTarget">{{ link['target']['node_url'] }}</span>
-		</div>
+    <div v-for="(links, level) in levels" :key="level" class="level">
+      <span v-for="(link, index) in links" :key="index" class="link">
+        <span v-if="link['source'] === null">
+          Primary url: {{ link['target']['node_url'] }}
+        </span>
+        <span v-else-if="link['state']['is_already_in_path']">
+          <strike>
+            {{ link['state']['weight'] }}
+            {{ link['target']['node_url'] }} from
+            {{ link['source']['node_url'] }}
+          </strike>
+        </span>
+        <span v-else>
+            {{ link['state']['weight'] }}
+            {{ link['target']['node_url'] }} from
+            {{ link['source']['node_url'] }}
+        </span>
+      </span>
+    </div>
 	</div>
 </template>
 
@@ -29,11 +43,11 @@ interface EventKeys {
 }
 
 @Component
-export default class Map extends Vue {
+export default class Results extends Vue {
   eventKeys: EventKeys | null = null;
   inputUrl: string | null = null;
   host: string = 'http://0.0.0.0:5001';
-  links: any[] = [];
+  levels: any[] = [];
 
   @Prop() private url!: string;
 
@@ -56,7 +70,14 @@ export default class Map extends Vue {
   }
 
   startUnpacking() {
-    axios.post(`${this.host}/api/start`, {url: this.url});
+    const packet = {
+      url: this.url,
+      rules: {
+        max_link_depth: 2,
+        // force_from_web: true,
+      },
+    };
+    axios.post(`${this.host}/api/start`, packet);
   }
 
   handleGetEventKeys(response: any) {
@@ -67,13 +88,21 @@ export default class Map extends Vue {
 
   handleTreeUpdate(node: any) {
     const formattedNode = this.formatNode(node);
-    this.links.push(formattedNode);
+    const level: number = formattedNode.state.level;
+
+    if (typeof this.levels[level] === 'undefined') {
+      this.levels[level] = [];
+    }
+
+    this.levels[level].push(formattedNode);
+    Vue.set(this.levels, level, this.levels[level]);
+    // console.log(formattedNode);
   }
 
   handleFormSubmit() {
     this.$router.push({
-      name: 'map',
-      query: {
+      name: 'results',
+      params: {
         url: this.inputUrl as string,
       },
     });
@@ -96,4 +125,11 @@ export default class Map extends Vue {
 }
 </script>
 
-<style lang="scss"></style>
+<style lang="scss">
+.level {
+  margin: 15px 0;
+}
+.link {
+  padding: 0 10px;
+}
+</style>

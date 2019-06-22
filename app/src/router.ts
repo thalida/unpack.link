@@ -14,33 +14,20 @@ export default new Router({
       component: Home,
     },
     {
-      path: '/map',
-      name: 'map',
-      component: () => import(/* webpackChunkName: "map" */ './views/Map.vue'),
-      props: (route) => ({ url: route.query.url }),
-      beforeEnter: (to, from, next) => {
-        if (
-          typeof to.query === 'undefined'
-          || to.query === null
-          || typeof to.query.url === 'undefined'
-          || to.query.url === null
-        ) {
-          return next('/');
-        }
-
-        const url: string = to.query.url.toString() || '';
-        const urlLen: number = url.length;
-        if (typeof url === 'string' && urlLen > 0) {
-          return next();
-        }
-
-        return next('/');
-      },
-    },
-    {
       path: '/about',
       name: 'about',
-      component: () => import(/* webpackChunkName: "about" */ './views/About.vue'),
+      component: () => import(/* webpackChunkName: 'about' */ './views/About.vue'),
+    },
+    {
+      path: '/:url(.*)',
+      name: 'results',
+      props: (route) => ({ url: route.params.url }),
+      component: () => import(/* webpackChunkName: 'results' */ './views/Results.vue'),
+    },
+    {
+      path: '*',
+      name: '404',
+      component: () => import(/* webpackChunkName: '404' */ './views/404.vue'),
     },
   ],
 });

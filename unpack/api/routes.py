@@ -29,17 +29,16 @@ def event_keys():
 def unpack():
     try:
         node_url = request.json.get('url')
+        rules = request.json.get('rules')
         connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
         channel = connection.channel()
-        channel.queue_declare(queue='fetcher', durable=True)
+        channel.queue_declare(queue='fetcher_p1', durable=True)
         channel.basic_publish(
             exchange='',
-            routing_key='fetcher',
+            routing_key='fetcher_p1',
             body=json.dumps({
                 'node_url': node_url,
-                'rules': {
-                    'max_link_depth': 1
-                }
+                'rules': rules,
             }),
             properties=pika.BasicProperties(
                 delivery_mode=2,  # make message persistent
