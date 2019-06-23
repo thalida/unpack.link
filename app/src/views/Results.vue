@@ -1,135 +1,108 @@
 <template>
-	<div class="map">
+	<div class="results" :if="!isLoading">
 		<form id="input-form" @submit.prevent>
 			<input
-				v-model="inputUrl"
+				v-model="requestedURL"
 				type="url"
 				placeholder="http://"
 				required />
-			<button type="submit" @click="handleFormSubmit">unpack</button>
+			<button type="submit" @click="onFormSubmit">unpack</button>
 		</form>
-    <div v-for="(links, level) in levels" :key="level" class="level">
-      <span v-for="(link, index) in links" :key="index" class="link">
-        <span v-if="link['source'] === null">
-          Primary url: {{ link['target']['node_url'] }}
-        </span>
-        <span v-else-if="link['state']['is_already_in_path']">
-          <strike>
-            {{ link['state']['weight'] }}
-            {{ link['target']['node_url'] }} from
-            {{ link['source']['node_url'] }}
-          </strike>
-        </span>
-        <span v-else>
-            {{ link['state']['weight'] }}
-            {{ link['target']['node_url'] }} from
-            {{ link['source']['node_url'] }}
-        </span>
-      </span>
+    <div class="tree">
+      <Level
+        v-for="(targetNodes, level) in nodesByLevel"
+        :key="level"
+        :nodeUUIDs="targetNodes"
+      />
     </div>
 	</div>
 </template>
 
 <script lang="ts">
-import { Component, Prop, Vue } from 'vue-property-decorator';
+import { Vue, Component, Prop, Watch } from 'vue-property-decorator';
 import axios from 'axios';
 import io from 'socket.io-client';
+import Level from '@/components/Level.vue';
 
 const socket = io('0.0.0.0:5001');
 
-interface EventKeys {
-  TREE_UPDATE: string;
-  TREE_INIT: string;
-}
 
-@Component
+@Component({
+  components: {Level},
+})
 export default class Results extends Vue {
-  eventKeys: EventKeys | null = null;
-  inputUrl: string | null = null;
-  host: string = 'http://0.0.0.0:5001';
-  levels: any[] = [];
-
   @Prop() private url!: string;
 
   created() {
-    this.getEventKeys();
-    this.inputUrl = this.url;
+    this.$store.dispatch('handleNewRequestUrl', { url: this.url });
   }
 
-  getEventKeys() {
-    axios.get(`${this.host}/api/event_keys`, {params: {url: this.url}})
-      .then(this.handleGetEventKeys);
+  get requestedURL() {
+    return this.$store.state.requestedURL;
+  }
+
+  set requestedURL(newUrl) {
+    this.$store.commit('setRequestedURL', newUrl);
+  }
+
+  get eventKeys() {
+    return this.$store.state.eventKeys;
+  }
+
+  get isLoading() {
+    return this.$store.state.isLoading;
+  }
+
+  get nodesByLevel() {
+    return this.$store.state.nodesByLevel;
+  }
+
+  @Watch('eventKeys', {immediate: true})
+  onEventKeysChanged(newValue: any) {
+    if (typeof newValue === 'undefined' || newValue === null) {
+      return;
+    }
+    this.startListening();
+    this.$store.dispatch('startUnpacking');
   }
 
   startListening() {
-    if (this.eventKeys === null) {
-      return;
-    }
-
-    socket.on(this.eventKeys!.TREE_UPDATE, this.handleTreeUpdate);
-  }
-
-  startUnpacking() {
-    const packet = {
-      url: this.url,
-      rules: {
-        max_link_depth: 2,
-        // force_from_web: true,
-      },
-    };
-    axios.post(`${this.host}/api/start`, packet);
-  }
-
-  handleGetEventKeys(response: any) {
-    this.eventKeys = response.data;
-    this.startListening();
-    this.startUnpacking();
-  }
-
-  handleTreeUpdate(node: any) {
-    const formattedNode = this.formatNode(node);
-    const level: number = formattedNode.state.level;
-
-    if (typeof this.levels[level] === 'undefined') {
-      this.levels[level] = [];
-    }
-
-    this.levels[level].push(formattedNode);
-    Vue.set(this.levels, level, this.levels[level]);
-    // console.log(formattedNode);
-  }
-
-  handleFormSubmit() {
-    this.$router.push({
-      name: 'results',
-      params: {
-        url: this.inputUrl as string,
-      },
+    socket.on(this.eventKeys!.TREE_UPDATE, (rawLink: any) => {
+      this.$store.dispatch('insertLink', this.formatLink(rawLink));
     });
   }
 
-  formatNode(node: any) {
-    let formattedNode = null;
+  formatLink(rawLink: any) {
+    let link = null;
 
-    if (typeof node === 'object') {
-      formattedNode = JSON.parse(JSON.stringify(node));
+    if (typeof rawLink === 'object') {
+      link = JSON.parse(JSON.stringify(rawLink));
     } else {
-      formattedNode = JSON.parse(node);
+      link = JSON.parse(rawLink);
     }
 
-    formattedNode.hasSource = typeof formattedNode.source !== 'undefined' && formattedNode.source !== null;
-    formattedNode.hasTarget = typeof formattedNode.target !== 'undefined' && formattedNode.target !== null;
+    link.hasSource = typeof link.source !== 'undefined' && link.source !== null;
+    link.hasTarget = typeof link.target !== 'undefined' && link.target !== null;
 
-    return formattedNode;
+    return link;
+  }
+
+  onFormSubmit() {
+    this.$router.push({
+      name: 'results',
+      params: {
+        url: this.requestedURL as string,
+      },
+    });
   }
 }
 </script>
 
 <style lang="scss">
-.level {
-  margin: 15px 0;
-}
-.link {
-  padding: 0 10px;
+.tree {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-gap: 10px;
+  grid-auto-rows: minmax(100px, auto);
 }
 </style>
