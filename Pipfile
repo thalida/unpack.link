@@ -17,6 +17,7 @@ kombu = "*"
 sphinx = "*"
 sphinx-rtd-theme = "*"
 flask-cors = "*"
+docker = "*"
 
 [dev-packages]
 pylint = "*"

@@ -10,33 +10,70 @@ args : 'api-server', 'broadcaster', 'fetcher'
     Available actions to trigger
 """
 
+import sys
+import traceback
 import os
 os.environ['TZ'] = 'UTC'
 
 import argparse
 
+import logging
+root_logger = logging.getLogger()
+
+# Create handlers
+c_handler = logging.StreamHandler()
+f_handler = logging.FileHandler('/tmp/unpack_controller_logs.log')
+c_handler.setLevel(logging.INFO)
+f_handler.setLevel(logging.INFO)
+
+# Create formatters and add it to handlers
+c_format = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
+f_format = logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+c_handler.setFormatter(c_format)
+f_handler.setFormatter(f_format)
+
+# Add handlers to the logger
+root_logger.addHandler(c_handler)
+root_logger.addHandler(f_handler)
+
+logger = logging.getLogger(__name__)
+
+
+def handle_excepthook(exctype, value, tb):
+    uncaught_logger = logging.getLogger('uncaught')
+    message = ''.join(traceback.format_exception(exctype, value, tb))
+    uncaught_logger.critical(message)
+
+sys.excepthook = handle_excepthook
+
+
 def main():
     parser = argparse.ArgumentParser(description='Start an unpack queue...')
-    parser.add_argument('action',
-                        choices=['api-server', 'broadcaster', 'fetcher-p0', 'fetcher-p1'],
-                        help='Unpack queue name')
+    parser.add_argument(
+        'action',
+        choices=[
+            'api-server',
+            'fetcher-queue-manager',
+            'fetcher-queue-worker',
+        ],
+        help='Unpack queue name'
+    )
+    parser.add_argument('-q', help="Queue Name")
+
     args = parser.parse_args()
 
     if args.action == 'api-server':
         import unpack.api.server
         unpack.api.server.main()
 
-    elif args.action == 'broadcaster':
-        import unpack.queues.broadcaster.consumer
-        unpack.queues.broadcaster.consumer.main()
+    elif args.action == 'fetcher-queue-manager':
+        import unpack.queues.fetcher.queue_manager
+        unpack.queues.fetcher.queue_manager.main(args.q)
 
-    elif args.action == 'fetcher-p0':
-        import unpack.queues.fetcher.consumer_p0
-        unpack.queues.fetcher.consumer_p0.main()
-
-    elif args.action == 'fetcher-p1':
-        import unpack.queues.fetcher.consumer_p1
-        unpack.queues.fetcher.consumer_p1.main()
+    elif args.action == 'fetcher-queue-worker':
+        import unpack.queues.fetcher.queue_worker
+        unpack.queues.fetcher.queue_worker.main(args.q)
 
 if __name__ == '__main__':
     main()

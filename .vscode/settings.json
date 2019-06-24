@@ -3,6 +3,7 @@
     "cSpell.words": [
         "Vuex",
         "amqp",
+        "jsonify",
         "socketio"
     ]
 }

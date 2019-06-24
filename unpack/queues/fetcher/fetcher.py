@@ -3,6 +3,9 @@ os.environ['TZ'] = 'UTC'
 
 import json
 
+import logging
+logger = logging.getLogger(__name__)
+
 import pika
 
 from ...helpers import UnpackHelpers
@@ -57,6 +60,7 @@ class Fetcher:
 
         self.source_node_uuid = body.get('source_node_uuid')
         self.origin_source_url = body.get('origin_source_url', self.node_url)
+        self.origin_source_uuid = UnpackHelpers.fetch_node_uuid(self.origin_source_url)
         self.is_origin_node = self.source_node_uuid is None
 
         self.walk_node_tree()
@@ -111,6 +115,7 @@ class Fetcher:
             source_node_uuid = self.node_uuid
             target_url = raw_link.get('target_node_url')
             target_node_uuid = raw_link.get('target_node_uuid')
+            # TODO: Don't refetch origin source uuid here!
             origin_source_uuid = UnpackHelpers.fetch_node_uuid(
                 self.origin_source_url)
 
@@ -181,7 +186,7 @@ class Fetcher:
     def publish_child(self, body):
         self.channel.basic_publish(
             exchange='',
-            routing_key='fetcher_p0',
+            routing_key=self.origin_source_uuid,
             body=json.dumps(body),
             properties=pika.BasicProperties(
                 delivery_mode=2,  # make message persistent

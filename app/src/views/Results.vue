@@ -34,7 +34,15 @@ export default class Results extends Vue {
   @Prop() private url!: string;
 
   created() {
-    this.$store.dispatch('handleNewRequestUrl', { url: this.url });
+    this.$store.dispatch('setupNewRequest', { url: this.url });
+  }
+
+  get apiHost() {
+    return this.$store.state.apiHost;
+  }
+
+  get settings() {
+    return this.$store.state.settings;
   }
 
   get requestedURL() {
@@ -63,13 +71,22 @@ export default class Results extends Vue {
       return;
     }
     this.startListening();
-    this.$store.dispatch('startUnpacking');
+    this.startUnpacking();
   }
 
   startListening() {
     socket.on(this.eventKeys!.TREE_UPDATE, (rawLink: any) => {
       this.$store.dispatch('insertLink', this.formatLink(rawLink));
     });
+  }
+
+  startUnpacking() {
+    const path = `${this.apiHost}/api/start`;
+    const params = {
+      url: this.requestedURL,
+      rules: this.settings.rules,
+    };
+    return axios.post(path, params);
   }
 
   formatLink(rawLink: any) {
@@ -88,6 +105,7 @@ export default class Results extends Vue {
   }
 
   onFormSubmit() {
+    this.$store.dispatch('resetState');
     this.$router.push({
       name: 'results',
       params: {

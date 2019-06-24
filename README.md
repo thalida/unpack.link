@@ -2,13 +2,8 @@
 
 ## Starting Services
 
-Use `python contorller.py`
-
-Web Server: `python contorller.py web-server`
-
-Fetcher Queue: `python contorller.py fetcher`
-
-Broadcaster Queue: `python contorller.py broadcaster`
+Use `export MQ_HOST=10.0.12.195 && docker-compose up --build`
+Check that it's running with `docker ps`
 
 ## Documenation
 
@@ -17,6 +12,17 @@ Rebuild Docs: `make html -C docs/`
 https://www.python.org/dev/peps/pep-0008/
 
 https://numpydoc.readthedocs.io/en/latest/format.html#docstring-standard
+
+In `/usr/local/var/postgres/postgresql.conf`
+```
+listen_addresses = '0.0.0.0'
+```
+
+In `/usr/local/var/postgres/pg_hba.conf`
+```
+copy a line about 127 stuff and change to all 0s
+```
+
 
 ## Examples
 ### Twitter
@@ -63,7 +69,10 @@ deleted_quoted_tweet = 946795191784132610
 - [ ] Add better comments and documentation
     - [x] Figure out one of those self documenting sites (sphinx)
     - [ ] Vue/JS autodocs(?)
-
+- [ ] split out important shit from __init__ it's okay for readability!!!
+- [ ] change any print statements to log.info things
+- [ ] move broadcaster to be under queue manager
+- [ ] figure out why queues aren't being deleted
 
 ## Some Date
 - flask app

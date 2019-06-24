@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 ENV_VARS = {
     'DB': {
-        'HOST': 'UNPACK_DB_HOST',
+        'HOST': 'MQ_HOST',
         'NAME': 'UNPACK_DB_NAME',
         'USER': 'UNPACK_DB_USER',
         'PASSWORD': 'UNPACK_DB_PASSWORD',
@@ -21,7 +21,7 @@ ENV_VARS = {
 
 class UnpackHelpers:
     DB_CREDS = {
-        'host': os.getenv(ENV_VARS['DB']['HOST'], 'localhost'),
+        'host': os.getenv(ENV_VARS['DB']['HOST']),
         'dbname': os.getenv(ENV_VARS['DB']['NAME']),
         'user': os.getenv(ENV_VARS['DB']['USER']),
         'password': os.getenv(ENV_VARS['DB']['PASSWORD']),
@@ -287,7 +287,8 @@ class UnpackHelpers:
                 res = UnpackHelpers.store_node(node_url)
 
             return res.get('uuid')
-        except Exception:
+        except Exception as e:
+            print(e)
             UnpackHelpers.raise_error(
                 'Unpack: Error fetching node uuid for url: {node_url}',
                 node_url=node_url

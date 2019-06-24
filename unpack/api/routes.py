@@ -1,8 +1,10 @@
+import os
 from pprint import pprint
 import json
 import logging
 
 from flask import Blueprint, request, abort, jsonify
+import docker
 import pika
 
 from ..helpers import UnpackHelpers
@@ -29,13 +31,16 @@ def event_keys():
 def unpack():
     try:
         node_url = request.json.get('url')
+        node_uuid = UnpackHelpers.fetch_node_uuid(node_url);
         rules = request.json.get('rules')
-        connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+
+        connection = pika.BlockingConnection(pika.ConnectionParameters(os.environ['MQ_HOST']))
         channel = connection.channel()
-        channel.queue_declare(queue='fetcher_p1', durable=True)
+        channel.queue_declare(queue=node_uuid)
+
         channel.basic_publish(
             exchange='',
-            routing_key='fetcher_p1',
+            routing_key=node_uuid,
             body=json.dumps({
                 'node_url': node_url,
                 'rules': rules,
@@ -43,7 +48,33 @@ def unpack():
             properties=pika.BasicProperties(
                 delivery_mode=2,  # make message persistent
             ))
+
+        client = docker.from_env()
+        container = client.containers.run(
+            image="unpack_container",
+            command=f"fetcher-queue-manager -q {node_uuid}",
+            hostname=f'unpack_container_{node_uuid}',
+            environment={
+                'MQ_HOST': os.environ['MQ_HOST'],
+                'UNPACK_DB_NAME': os.environ['UNPACK_DB_NAME'],
+                'UNPACK_DB_USER': os.environ['UNPACK_DB_USER'],
+                'UNPACK_DB_PASSWORD': os.getenv('UNPACK_DB_PASSWORD'),
+            },
+            volumes={
+                '/var/run/docker.sock': {'bind': '/var/run/docker.sock', 'mode': 'ro'},
+                '/tmp/unpack_manager_logs.log': {'bind': '/tmp/unpack_controller_logs.log', 'mode': 'rw'},
+            },
+            detach=True
+        )
+
+        for line in container.logs(stream=True):
+            print(' -- ', line.strip())
+
+        # connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+        # channel = connection.channel()
+        # channel.queue_declare(queue='fetcher_p1', durable=True)
         connection.close()
         return jsonify({'success': True})
-    except Exception:
+    except Exception as e:
+        print(e)
         return jsonify({'success': False})

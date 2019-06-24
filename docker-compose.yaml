@@ -1,0 +1,25 @@
+version: "3"
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - 15672:15672
+      - 5672:5672
+
+  api_server:
+    build: .
+    image: unpack_container
+    depends_on:
+      - rabbitmq
+    command: 'api-server'
+    ports:
+      - 5001:5001
+    environment:
+      - MQ_HOST
+      - UNPACK_DB_NAME
+      - UNPACK_DB_USER
+      - UNPACK_DB_PASSWORD
+      - PYTHONUNBUFFERED=false
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock

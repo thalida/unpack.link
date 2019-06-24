@@ -103,25 +103,19 @@ export default new Vuex.Store({
     },
   },
   actions: {
-    handleNewRequestUrl({ commit, dispatch }, { url }) {
+    resetState({ commit }) {
+      commit('resetNodes');
+      commit('resetLinks');
+      commit('resetNodesByLevel');
+      commit('resetTargetSources');
+      commit('resetRequiredNodes');
+    },
+    setupNewRequest({ commit, dispatch }, { url }) {
       commit('setIsLoading', true);
       commit('setRequestedUrl', url);
       dispatch('getEventKeys').then(() => {
-        // commit('resetNodes');
-        // commit('resetLinks');
-        // commit('resetNodesByLevel');
-        // commit('resetTargetSources');
-        // commit('resetRequiredNodes');
         commit('setIsLoading', false);
       });
-    },
-    startUnpacking({ state }) {
-      const path = `${state.apiHost}/api/start`;
-      const params = {
-        url: state.requestedURL,
-        rules: state.settings.rules,
-      };
-      return axios.post(path, params);
     },
     getEventKeys({ commit, state }) {
       const path = `${state.apiHost}/api/event_keys`;
