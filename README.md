@@ -69,9 +69,9 @@ deleted_quoted_tweet = 946795191784132610
 - [ ] Add better comments and documentation
     - [x] Figure out one of those self documenting sites (sphinx)
     - [ ] Vue/JS autodocs(?)
-- [ ] split out important shit from __init__ it's okay for readability!!!
+- [x] split out important shit from __init__ it's okay for readability!!!
 - [x] change any print statements to log.info things
-- [ ] move broadcaster to be under queue manager
+- [x] move broadcaster to be under queue manager
 - [ ] figure out why queues aren't being deleted
 
 ## Some Date
