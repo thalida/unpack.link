@@ -2,7 +2,6 @@ import hashlib
 import os
 import json
 import logging
-from pprint import pprint
 import uuid
 
 import psycopg2
@@ -288,7 +287,6 @@ class UnpackHelpers:
 
             return res.get('uuid')
         except Exception as e:
-            print(e)
             UnpackHelpers.raise_error(
                 'Unpack: Error fetching node uuid for url: {node_url}',
                 node_url=node_url

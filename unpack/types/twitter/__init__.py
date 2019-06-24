@@ -1,5 +1,4 @@
 import re
-from pprint import pprint
 
 from twython import Twython
 import twython.exceptions

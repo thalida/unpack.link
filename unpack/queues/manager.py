@@ -19,7 +19,7 @@ def main(queue_id):
     fetcher_q = channel.queue_declare(queue=fetcher_queue_name)
     broadcaster_q = channel.queue_declare(queue=broadcaster_queue_name)
 
-    print(f'Creating queues for id: {queue_id}')
+    logger.info(f'Creating queues for id: {queue_id}')
 
     docker_client = docker.from_env()
     empty_since = None
@@ -72,6 +72,6 @@ def main(queue_id):
 
     # The queue has been empty for the TTL, so lets delete it,
     # which will kill all the workers
-    print("Delete stale queue")
+    logger.info("Delete stale queue")
     channel.queue_delete(queue=fetcher_queue_name)
     channel.queue_delete(queue=broadcaster_queue_name)

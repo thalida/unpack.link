@@ -1,5 +1,4 @@
 import os
-from pprint import pprint
 import json
 import logging
 
@@ -70,7 +69,7 @@ def unpack():
         )
 
         for line in container.logs(stream=True):
-            print(' -- ', line.strip())
+            logger.info(' -- ', line.strip())
 
         # connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
         # channel = connection.channel()
@@ -78,5 +77,5 @@ def unpack():
         connection.close()
         return jsonify({'success': True})
     except Exception as e:
-        print(e)
+        logger.exception(e)
         return jsonify({'success': False})

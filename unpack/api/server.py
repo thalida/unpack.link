@@ -6,7 +6,6 @@ import eventlet
 eventlet.monkey_patch()
 
 import logging
-from pprint import pprint
 
 from flask import Flask, abort, render_template
 from flask_socketio import SocketIO, emit

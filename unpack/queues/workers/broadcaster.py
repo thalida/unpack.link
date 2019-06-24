@@ -22,5 +22,5 @@ def main(queue_name):
     )
 
 
-    print(' [*] Waiting for Broadcaster messages. To exit press CTRL+C or delete the queue')
+    logger.info(' [*] Waiting for Broadcaster messages. To exit press CTRL+C or delete the queue')
     channel.start_consuming()

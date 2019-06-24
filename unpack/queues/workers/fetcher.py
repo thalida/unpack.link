@@ -18,5 +18,5 @@ def main(queue_name):
     channel.basic_consume(queue=queue_name, on_message_callback=Fetcher)
 
 
-    print(' [*] Waiting for Fetcher messages. To exit press CTRL+C or delete the queue')
+    logger.info(' [*] Waiting for Fetcher messages. To exit press CTRL+C or delete the queue')
     channel.start_consuming()

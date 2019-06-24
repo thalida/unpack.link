@@ -205,6 +205,6 @@ class Fetcher:
                     node_match = matches[0]
                     break
             except TypeError as e:
-                print(node_url, e)
+                logger.exception(node_url, e)
 
         return type_cls, node_match
