@@ -172,7 +172,7 @@ class Fetcher:
     def broadcast(self, source_node_uuid=None, target_node_uuid=None, origin_source_url=None, state=None):
         self.channel.basic_publish(
             exchange='',
-            routing_key='broadcaster',
+            routing_key=f'broadcast-{self.origin_source_uuid}',
             body=json.dumps({
                 'source_node_uuid': source_node_uuid,
                 'target_node_uuid': target_node_uuid,
@@ -186,7 +186,7 @@ class Fetcher:
     def publish_child(self, body):
         self.channel.basic_publish(
             exchange='',
-            routing_key=self.origin_source_uuid,
+            routing_key=f'fetch-{self.origin_source_uuid}',
             body=json.dumps(body),
             properties=pika.BasicProperties(
                 delivery_mode=2,  # make message persistent

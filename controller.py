@@ -54,8 +54,9 @@ def main():
         'action',
         choices=[
             'api-server',
-            'fetcher-queue-manager',
-            'fetcher-queue-worker',
+            'queue-manager',
+            'queue-fetcher-worker',
+            'queue-broadcast-worker',
         ],
         help='Unpack queue name'
     )
@@ -67,13 +68,17 @@ def main():
         import unpack.api.server
         unpack.api.server.main()
 
-    elif args.action == 'fetcher-queue-manager':
-        import unpack.queues.fetcher.queue_manager
-        unpack.queues.fetcher.queue_manager.main(args.q)
+    elif args.action == 'queue-manager':
+        import unpack.queues.manager
+        unpack.queues.manager.main(args.q)
 
-    elif args.action == 'fetcher-queue-worker':
-        import unpack.queues.fetcher.queue_worker
-        unpack.queues.fetcher.queue_worker.main(args.q)
+    elif args.action == 'queue-fetcher-worker':
+        import unpack.queues.workers.fetcher
+        unpack.queues.workers.fetcher.main(args.q)
+
+    elif args.action == 'queue-broadcast-worker':
+        import unpack.queues.workers.broadcaster
+        unpack.queues.workers.broadcaster.main(args.q)
 
 if __name__ == '__main__':
     main()

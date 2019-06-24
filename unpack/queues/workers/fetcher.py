@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 
 import pika
 
-from unpack.queues.fetcher.fetcher import Fetcher
+from unpack.queues.jobs.fetcher import Fetcher
 
 
 def main(queue_name):

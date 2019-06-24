@@ -3,6 +3,9 @@ os.environ['TZ'] = 'UTC'
 
 import json
 
+import logging
+logger = logging.getLogger(__name__)
+
 from flask_socketio import SocketIO, emit
 
 from ...types.twitter import TypeTwitter
@@ -39,7 +42,7 @@ class Broadcaster:
                 'node_uuid': body['target_node_uuid'],
             }
 
-        print(event_data['target']['node_url'])
+        logger.info(event_data['target']['node_url'])
         socketio.emit(
             event_keys['TREE_UPDATE'],
             json.dumps(event_data, default=str)

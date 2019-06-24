@@ -34,13 +34,15 @@ def unpack():
         node_uuid = UnpackHelpers.fetch_node_uuid(node_url);
         rules = request.json.get('rules')
 
+        fetcher_queue_name = f'fetch-{node_uuid}'
+
         connection = pika.BlockingConnection(pika.ConnectionParameters(os.environ['MQ_HOST']))
         channel = connection.channel()
-        channel.queue_declare(queue=node_uuid)
+        channel.queue_declare(queue=fetcher_queue_name)
 
         channel.basic_publish(
             exchange='',
-            routing_key=node_uuid,
+            routing_key=fetcher_queue_name,
             body=json.dumps({
                 'node_url': node_url,
                 'rules': rules,
@@ -52,7 +54,7 @@ def unpack():
         client = docker.from_env()
         container = client.containers.run(
             image="unpack_container",
-            command=f"fetcher-queue-manager -q {node_uuid}",
+            command=f"queue-manager -q {node_uuid}",
             hostname=f'unpack_container_{node_uuid}',
             environment={
                 'MQ_HOST': os.environ['MQ_HOST'],
