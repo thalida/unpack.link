@@ -54,7 +54,7 @@ deleted_quoted_tweet = 946795191784132610
         - [x] render node on socket push
         - [ ] setup proper storage
     - [ ] Results
-        - [ ] Render each link in it's level
+        - [x] Render each link in it's level
         - [ ] Organize Level
             - [ ] not from same domain, then same domain
             - [ ] order both by order found on page
