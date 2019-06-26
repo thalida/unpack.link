@@ -24,7 +24,7 @@ app.register_blueprint(api_routes)
 cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 socketio = SocketIO()
-socketio.init_app(app, message_queue='amqp://')
+socketio.init_app(app, message_queue=f'amqp://{os.environ["MQ_HOST"]}:5672')
 
 def main():
     socketio.run(app, debug=True, host='0.0.0.0', port='5001')

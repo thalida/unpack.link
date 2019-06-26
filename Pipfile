@@ -18,6 +18,7 @@ sphinx = "*"
 sphinx-rtd-theme = "*"
 flask-cors = "*"
 docker = "*"
+pyrabbit = "*"
 
 [dev-packages]
 pylint = "*"

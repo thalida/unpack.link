@@ -10,9 +10,9 @@
 		</form>
     <div class="tree">
       <Level
-        v-for="(targetNodes, level) in nodesByLevel"
+        v-for="(links, level) in linksByLevel"
         :key="level"
-        :nodeUUIDs="targetNodes"
+        :links="links"
       />
     </div>
 	</div>
@@ -61,8 +61,8 @@ export default class Results extends Vue {
     return this.$store.state.isLoading;
   }
 
-  get nodesByLevel() {
-    return this.$store.state.nodesByLevel;
+  get linksByLevel() {
+    return this.$store.state.linksByLevel;
   }
 
   @Watch('eventKeys', {immediate: true})

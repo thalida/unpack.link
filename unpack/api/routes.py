@@ -54,7 +54,6 @@ def unpack():
         container = client.containers.run(
             image="unpack_container",
             command=f"queue-manager -q {node_uuid}",
-            hostname=f'unpack_container_{node_uuid}',
             environment={
                 'MQ_HOST': os.environ['MQ_HOST'],
                 'UNPACK_DB_NAME': os.environ['UNPACK_DB_NAME'],
@@ -65,15 +64,10 @@ def unpack():
                 '/var/run/docker.sock': {'bind': '/var/run/docker.sock', 'mode': 'ro'},
                 '/tmp/unpack_manager_logs.log': {'bind': '/tmp/unpack_controller_logs.log', 'mode': 'rw'},
             },
-            detach=True
+            detach=True,
+            auto_remove=True,
         )
 
-        for line in container.logs(stream=True):
-            logger.info(' -- ', line.strip())
-
-        # connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
-        # channel = connection.channel()
-        # channel.queue_declare(queue='fetcher_p1', durable=True)
         connection.close()
         return jsonify({'success': True})
     except Exception as e:

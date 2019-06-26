@@ -13,7 +13,7 @@ class State {
   eventKeys: any | null;
   nodes: any[];
   links: any[];
-  nodesByLevel: any[];
+  linksByLevel: any[];
   targetSources: any[];
   requiredNodes: any[];
   settings: any;
@@ -25,7 +25,7 @@ class State {
     this.eventKeys = null;
     this.nodes = [];
     this.links = [];
-    this.nodesByLevel = [];
+    this.linksByLevel = [];
     this.targetSources = [];
     this.requiredNodes = [];
     this.settings = {
@@ -60,17 +60,18 @@ export default new Vuex.Store({
 
       Vue.set(state.nodes, node.node_uuid, node);
     },
-    addNodeToLevel(state, {level, node_uuid}) {
-      if (typeof state.nodesByLevel[level] === 'undefined') {
-        state.nodesByLevel[level] = [];
+    addLinkToLevel(state, {level, link}) {
+      if (typeof state.linksByLevel[level] === 'undefined') {
+        state.linksByLevel[level] = [];
       }
 
-      if (state.nodesByLevel[level].includes(node_uuid)) {
-        return;
-      }
+      // const foundLink
+      // if (state.linksByLevel[level].includes(link)) {
+      //   return;
+      // }
 
-      state.nodesByLevel[level].push(node_uuid);
-      Vue.set(state.nodesByLevel, level, state.nodesByLevel[level]);
+      state.linksByLevel[level].push(link);
+      Vue.set(state.linksByLevel, level, state.linksByLevel[level]);
     },
     addTargetSource(state, {targetUUID, sourceUUID}) {
       if (typeof state.targetSources[targetUUID] === 'undefined') {
@@ -92,8 +93,8 @@ export default new Vuex.Store({
     resetLinks(state) {
       state.links = [];
     },
-    resetNodesByLevel(state) {
-      state.nodesByLevel = [];
+    resetLinksByLevel(state) {
+      state.linksByLevel = [];
     },
     resetTargetSources(state) {
       state.targetSources = [];
@@ -106,7 +107,7 @@ export default new Vuex.Store({
     resetState({ commit }) {
       commit('resetNodes');
       commit('resetLinks');
-      commit('resetNodesByLevel');
+      commit('resetLinksByLevel');
       commit('resetTargetSources');
       commit('resetRequiredNodes');
     },
@@ -126,7 +127,7 @@ export default new Vuex.Store({
           commit('setEventKeys', response.data);
         });
     },
-    insertLink({ commit, state }, link) {
+    insertLink({ commit }, link) {
       const sourceUUID: string = (link.source) ? link.source.node_uuid : null;
       const targetUUID: string = link.target.node_uuid;
       const level: number = link.state.level;
@@ -134,7 +135,7 @@ export default new Vuex.Store({
       commit('addNode', link.source);
       commit('addNode', link.target);
       commit('addLink', link);
-      commit('addNodeToLevel', { level, node_uuid: targetUUID });
+      commit('addLinkToLevel', { level, link });
       commit('addTargetSource', {targetUUID, sourceUUID});
     },
   },

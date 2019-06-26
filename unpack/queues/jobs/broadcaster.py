@@ -13,7 +13,7 @@ from ...types.media import TypeMedia
 from ...types.base import TypeBase
 from ...helpers import UnpackHelpers
 
-socketio = SocketIO(message_queue='amqp://')
+socketio = SocketIO(message_queue=f'amqp://{os.environ["MQ_HOST"]}:5672')
 
 class Broadcaster:
     def __init__(self, ch, method, properties, body):

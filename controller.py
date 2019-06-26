@@ -18,13 +18,17 @@ os.environ['TZ'] = 'UTC'
 import argparse
 
 import logging
+logging.basicConfig(level=logging.DEBUG)
+logging.getLogger("pika").setLevel(logging.WARNING)
+logging.getLogger("docker").setLevel(logging.WARNING)
+logging.getLogger("urllib3").setLevel(logging.WARNING)
 root_logger = logging.getLogger()
 
 # Create handlers
 c_handler = logging.StreamHandler()
 f_handler = logging.FileHandler('/tmp/unpack_controller_logs.log')
-c_handler.setLevel(logging.INFO)
-f_handler.setLevel(logging.INFO)
+# c_handler.setLevel(logging.DEBUG)
+# f_handler.setLevel(logging.DEBUG)
 
 # Create formatters and add it to handlers
 c_format = logging.Formatter('%(name)s - %(levelname)s - %(message)s')

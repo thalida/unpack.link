@@ -6,6 +6,9 @@ import docker
 import logging
 logger = logging.getLogger(__name__)
 
+from pyrabbit.api import Client
+
+cl = Client(f'http://{os.environ["MQ_HOST"]}:55672/api', 'guest', 'guest')
 
 def main(queue_id):
     connection = pika.BlockingConnection(
@@ -26,10 +29,9 @@ def main(queue_id):
     queue_ttl = 10
     check_queue_rate = 2
 
-    docker_client.containers.run(
+    broadcast_container = docker_client.containers.run(
         image="unpack_container",
         command=f"queue-broadcast-worker -q {broadcaster_queue_name}",
-        hostname=f'queue_broadcast_worker_{queue_id}',
         environment={
             'MQ_HOST': os.environ['MQ_HOST'],
             'UNPACK_DB_NAME': os.environ['UNPACK_DB_NAME'],
@@ -39,7 +41,8 @@ def main(queue_id):
         volumes={
             '/tmp/unpack_broadcast_worker_logs.log': {'bind': '/tmp/unpack_controller_logs.log', 'mode': 'rw'},
         },
-        detach=True
+        detach=True,
+        auto_remove=True,
     )
 
     # Workers to create
@@ -47,7 +50,6 @@ def main(queue_id):
         docker_client.containers.run(
             image="unpack_container",
             command=f"queue-fetcher-worker -q {fetcher_queue_name}",
-            hostname=f"queue_fetcher_worker_{queue_id}_{i}",
             environment={
                 'MQ_HOST': os.environ['MQ_HOST'],
                 'UNPACK_DB_NAME': os.environ['UNPACK_DB_NAME'],
@@ -57,21 +59,29 @@ def main(queue_id):
             volumes={
                 '/tmp/unpack_fetcher_worker_logs.log': {'bind': '/tmp/unpack_controller_logs.log', 'mode': 'rw'},
             },
-            detach=True
+            detach=True,
+            auto_remove=True,
         )
 
     # As long as queue has data in it and the TTL has not been reached
-    while empty_since is None or (time.time() - empty_since) < queue_ttl:
+    while (empty_since is None) or ((time.time() - empty_since) < queue_ttl):
         # No need to check to often, this just helps clean things up
         time.sleep(check_queue_rate)
-        fetcher_q_len = fetcher_q.method.message_count
-        if fetcher_q_len == 0 and empty_since is None:
+
+        # redeclearing the queue
+        fetcher_q_len = channel.queue_declare(queue=fetcher_queue_name).method.message_count
+        broadcaster_q_len = channel.queue_declare(queue=broadcaster_queue_name).method.message_count
+        total_q = fetcher_q_len + broadcaster_q_len
+
+        if (total_q == 0) and (empty_since is None):
             empty_since = time.time()
         elif fetcher_q_len > 0:
             empty_since = None
 
+    broadcast_container.remove(force=True)
+    channel.queue_delete(queue=fetcher_queue_name)
+    channel.queue_delete(queue=broadcaster_queue_name)
+
     # The queue has been empty for the TTL, so lets delete it,
     # which will kill all the workers
     logger.info("Delete stale queue")
-    channel.queue_delete(queue=fetcher_queue_name)
-    channel.queue_delete(queue=broadcaster_queue_name)

@@ -23,3 +23,4 @@ services:
       - PYTHONUNBUFFERED=false
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp/unpack_api_logs.log:/tmp/unpack_controller_logs.log

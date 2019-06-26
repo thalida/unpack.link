@@ -1,21 +1,21 @@
 <template>
   <div class="level">
-    <Node
-      v-for="(nodeUUID, index) in nodeUUIDs"
+    <Link
+      v-for="(link, index) in links"
       :key="index"
-      :nodeUUID="nodeUUID" />
+      :link="link" />
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
-import Node from '@/components/Node.vue';
+import Link from '@/components/Link.vue';
 
 @Component({
-  components: {Node},
+  components: {Link},
 })
 export default class Level extends Vue {
-  @Prop() private nodeUUIDs!: any[];
+  @Prop() private links!: any[];
 }
 </script>
 
