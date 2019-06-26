@@ -5,24 +5,6 @@
 Use `export MQ_HOST=10.0.12.195 && docker-compose up --build`
 Check that it's running with `docker ps`
 
-## Documenation
-
-Rebuild Docs: `make html -C docs/`
-
-https://www.python.org/dev/peps/pep-0008/
-
-https://numpydoc.readthedocs.io/en/latest/format.html#docstring-standard
-
-In `/usr/local/var/postgres/postgresql.conf`
-```
-listen_addresses = '0.0.0.0'
-```
-
-In `/usr/local/var/postgres/pg_hba.conf`
-```
-copy a line about 127 stuff and change to all 0s
-```
-
 
 ## Examples
 ### Twitter
