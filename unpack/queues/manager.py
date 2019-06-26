@@ -26,7 +26,7 @@ def main(queue_id):
 
     docker_client = docker.from_env()
     empty_since = None
-    queue_ttl = 5 * 60
+    queue_ttl = 10 * 60
     check_queue_rate = 2
     containers = []
 
