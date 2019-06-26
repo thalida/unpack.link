@@ -67,7 +67,10 @@ def main(queue_id):
         containers.append(fetcher_container)
 
     # As long as queue has data in it and the TTL has not been reached
-    while (empty_since is None) or (empty_since is not None and (time.time() - empty_since) < queue_ttl):
+    while True:
+        if empty_since is not None and (time.time() - empty_since) >= queue_ttl:
+            break
+
         # No need to check to often, this just helps clean things up
         time.sleep(check_queue_rate)
 
