@@ -26,8 +26,9 @@ def main(queue_id):
 
     docker_client = docker.from_env()
     empty_since = None
-    queue_ttl = 10
+    queue_ttl = 5 * 60
     check_queue_rate = 2
+    containers = []
 
     broadcast_container = docker_client.containers.run(
         image="unpack_container",
@@ -44,10 +45,11 @@ def main(queue_id):
         detach=True,
         auto_remove=True,
     )
+    containers.append(broadcast_container)
 
     # Workers to create
     for i in range(5):
-        docker_client.containers.run(
+        fetcher_container = docker_client.containers.run(
             image="unpack_container",
             command=f"queue-fetcher-worker -q {fetcher_queue_name}",
             environment={
@@ -62,9 +64,10 @@ def main(queue_id):
             detach=True,
             auto_remove=True,
         )
+        containers.append(fetcher_container)
 
     # As long as queue has data in it and the TTL has not been reached
-    while (empty_since is None) or ((time.time() - empty_since) < queue_ttl):
+    while (empty_since is None) or (empty_since is not None and (time.time() - empty_since) < queue_ttl):
         # No need to check to often, this just helps clean things up
         time.sleep(check_queue_rate)
 
@@ -75,10 +78,13 @@ def main(queue_id):
 
         if (total_q == 0) and (empty_since is None):
             empty_since = time.time()
-        elif fetcher_q_len > 0:
+        elif fetcher_q_len > 0 or broadcaster_q_len > 0:
             empty_since = None
 
-    broadcast_container.remove(force=True)
+
+    for container in containers:
+        container.remove(force=True)
+
     channel.queue_delete(queue=fetcher_queue_name)
     channel.queue_delete(queue=broadcaster_queue_name)
 

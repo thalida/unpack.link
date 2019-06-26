@@ -22,6 +22,8 @@ logging.basicConfig(level=logging.DEBUG)
 logging.getLogger("pika").setLevel(logging.WARNING)
 logging.getLogger("docker").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
+logging.getLogger("ampq").setLevel(logging.WARNING)
+
 root_logger = logging.getLogger()
 
 # Create handlers

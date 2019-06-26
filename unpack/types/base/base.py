@@ -16,7 +16,7 @@ class TypeBase:
     DEFAULT_RULES = {
         'force_from_web': False,
         'force_from_db': False,
-        'refresh_after': 5 * 60,  # 5 minutes (seconds)
+        'refresh_after': 10 * 60,  # 10 minutes (in seconds)
     }
 
     @classmethod
