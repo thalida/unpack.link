@@ -1,15 +1,3 @@
-"""controller.py
-
-[description]
-
-Attributes
-==========
-os.environ['TZ'] : UTC
-    Force server to use UTC time
-args : 'api-server', 'broadcaster', 'fetcher'
-    Available actions to trigger
-"""
-
 import sys
 import traceback
 import os

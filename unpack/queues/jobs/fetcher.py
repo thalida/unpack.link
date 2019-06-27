@@ -2,24 +2,25 @@ import os
 os.environ['TZ'] = 'UTC'
 
 import json
-
 import logging
-logger = logging.getLogger(__name__)
 
 import pika
 
 from ...helpers import UnpackHelpers
-from ...types.base import TypeBase
-from ...types.media import TypeMedia
-from ...types.twitter import TypeTwitter
+from ...content_types.twitter import ContentTypeTwitter
+from ...content_types.media import ContentTypeMedia
+from ...content_types.base import ContentTypeBase
+
+logger = logging.getLogger(__name__)
+
 
 class Fetcher:
     NODE_TYPES = [
-        TypeTwitter(),
-        TypeMedia(),
+        ContentTypeTwitter(),
+        ContentTypeMedia(),
 
         # TypeBase should always be last
-        TypeBase(),
+        ContentTypeBase(),
     ]
 
     DEFAULT_STATE = {

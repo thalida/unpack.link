@@ -9,7 +9,7 @@ from parsel import Selector
 from ...helpers import UnpackHelpers
 
 
-class TypeBase:
+class ContentTypeBase:
     TYPE = 'base'
     URL_PATTERN = re.compile(r'.*', re.IGNORECASE)
 

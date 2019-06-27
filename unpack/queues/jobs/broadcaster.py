@@ -2,18 +2,18 @@ import os
 os.environ['TZ'] = 'UTC'
 
 import json
-
 import logging
-logger = logging.getLogger(__name__)
 
 from flask_socketio import SocketIO, emit
 
-from ...types.twitter import TypeTwitter
-from ...types.media import TypeMedia
-from ...types.base import TypeBase
 from ...helpers import UnpackHelpers
+from ...content_types.twitter import ContentTypeTwitter
+from ...content_types.media import ContentTypeMedia
+from ...content_types.base import ContentTypeBase
 
+logger = logging.getLogger(__name__)
 socketio = SocketIO(message_queue=f'amqp://{os.environ["MQ_HOST"]}:5672')
+
 
 class Broadcaster:
     def __init__(self, ch, method, properties, body):
