@@ -96,7 +96,6 @@ class Fetcher:
             event_name=UnpackHelpers.EVENT_NAME['LINK_FETCH_SUCCESS'],
             source_node_uuid=self.source_node_uuid,
             target_node_uuid=self.node_uuid,
-            origin_source_url=self.origin_source_url,
             data=self.state,
         )
 
@@ -117,9 +116,6 @@ class Fetcher:
             source_node_uuid = self.node_uuid
             target_url = raw_link.get('target_node_url')
             target_node_uuid = raw_link.get('target_node_uuid')
-            # TODO: Don't refetch origin source uuid here!
-            origin_source_uuid = UnpackHelpers.fetch_node_uuid(
-                self.origin_source_url)
 
             if not target_node_uuid:
                 target_node_uuid = UnpackHelpers.fetch_node_uuid(target_url)
@@ -128,7 +124,6 @@ class Fetcher:
                 event_name=UnpackHelpers.EVENT_NAME['LINK_FETCH_START'],
                 source_node_uuid=source_node_uuid,
                 target_node_uuid=target_node_uuid,
-                origin_source_url=self.origin_source_url,
             )
 
             UnpackHelpers.store_link(
@@ -148,13 +143,12 @@ class Fetcher:
                     event_name=UnpackHelpers.EVENT_NAME['LINK_FETCH_SUCCESS'],
                     source_node_uuid=source_node_uuid,
                     target_node_uuid=target_node_uuid,
-                    origin_source_url=self.origin_source_url,
                     data=new_fetcher_state,
                 )
                 continue
 
             is_found_in_tree = UnpackHelpers.check_target_node_in_tree(
-                origin_source_uuid,
+                self.origin_source_uuid,
                 target_node_uuid,
                 new_fetcher_state['level'],
                 min_count=2
@@ -165,7 +159,6 @@ class Fetcher:
                     event_name=UnpackHelpers.EVENT_NAME['LINK_FETCH_SUCCESS'],
                     source_node_uuid=source_node_uuid,
                     target_node_uuid=target_node_uuid,
-                    origin_source_url=self.origin_source_url,
                     data=new_fetcher_state,
                 )
                 continue
@@ -180,7 +173,7 @@ class Fetcher:
                 'rules': self.rules,
             })
 
-    def broadcast(self, event_name=None, source_node_uuid=None, target_node_uuid=None, origin_source_url=None, data=None):
+    def broadcast(self, event_name=None, source_node_uuid=None, target_node_uuid=None, data=None):
         self.channel.basic_publish(
             exchange='',
             routing_key=f'broadcast-{self.origin_source_uuid}',
@@ -188,7 +181,7 @@ class Fetcher:
                 'event_name': event_name,
                 'source_node_uuid': source_node_uuid,
                 'target_node_uuid': target_node_uuid,
-                'origin_source_url': origin_source_url,
+                'origin_source_url': self.origin_source_url,
                 'data': data,
             }, default=str),
             properties=pika.BasicProperties(
