@@ -29,6 +29,11 @@ class UnpackHelpers:
     BLANK_NODE_UUID = str(uuid.UUID(int=0))
     DEFAULT_LINK_TYPE = 0
 
+    EVENT_NAME = {
+        'LINK_FETCH_START': 'LINK_FETCH_START',
+        'LINK_FETCH_SUCCESS': 'LINK_FETCH_SUCCESS',
+    }
+
     @staticmethod
     def hash_url(url):
         return hashlib.md5(str(url).encode('utf-8')).hexdigest()
@@ -38,9 +43,9 @@ class UnpackHelpers:
         return UnpackHelpers.hash_url(node_url)
 
     @staticmethod
-    def get_event_keys(node_url_hash=None, node_url=None, node_uuid=None):
+    def get_node_event_keys(node_url_hash=None, node_url=None, node_uuid=None):
         if node_url_hash is None and node_url is None and node_uuid is None:
-            raise AttributeError('get_event_keys requires a node_url_hash, node_url, or node_uuid')
+            raise AttributeError('get_node_event_keys requires a node_url_hash, node_url, or node_uuid')
 
         if node_url_hash is None:
             if node_url is None and node_uuid is not None:
@@ -49,14 +54,11 @@ class UnpackHelpers:
             node_url_hash = UnpackHelpers.get_url_hash(node_url)
 
         if node_url_hash is None:
-            raise AttributeError('get_event_keys requires a node_url_hash, node_url, or node_uuid')
+            raise AttributeError('get_node_event_keys requires a node_url_hash, node_url, or node_uuid')
 
-        event_keys = {
-            'TREE_INIT': f'tree_init:{node_url_hash}',
-            'TREE_UPDATE': f'tree_update:{node_url_hash}',
-        }
+        node_event_keys = {evt: f'{evt.lower()}:{node_url_hash}' for evt in UnpackHelpers.EVENT_NAME}
 
-        return event_keys
+        return node_event_keys
 
     @staticmethod
     def execute_sql(fetch_action, query, query_args):

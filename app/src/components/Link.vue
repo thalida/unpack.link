@@ -1,6 +1,6 @@
 <template>
   <div class="link">
-    <span :class="{'exists-already': link.state.is_already_in_path}">
+    <span :class="{'exists-already': link.data.is_already_in_path}">
       {{link.target.node_url}}
     </span>
   </div>

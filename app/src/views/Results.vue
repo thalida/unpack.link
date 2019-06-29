@@ -75,7 +75,7 @@ export default class Results extends Vue {
   }
 
   startListening() {
-    socket.on(this.eventKeys!.TREE_UPDATE, (rawLink: any) => {
+    socket.on(this.eventKeys!.LINK_FETCH_SUCCESS, (rawLink: any) => {
       this.$store.dispatch('insertLink', this.formatLink(rawLink));
     });
   }

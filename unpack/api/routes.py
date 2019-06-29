@@ -16,14 +16,14 @@ api_routes = Blueprint(
     static_folder='../'
 )
 
-@api_routes.route('/api/event_keys', methods=['GET'])
-def event_keys():
+@api_routes.route('/api/node_event_keys', methods=['GET'])
+def node_event_keys():
     try:
         node_url = request.args.get('url')
-        event_keys = UnpackHelpers.get_event_keys(node_url=node_url)
-        return jsonify(event_keys)
+        node_event_keys = UnpackHelpers.get_node_event_keys(node_url=node_url)
+        return jsonify(node_event_keys)
     except Exception:
-        logger.exception('Error GET event_keys')
+        logger.exception('Error GET node_event_keys')
         abort(500)
 
 @api_routes.route('/api/start', methods=['POST'])

@@ -10,7 +10,7 @@ class State {
   apiHost: string;
   isLoading: boolean;
   requestedURL: string | null;
-  eventKeys: any | null;
+  nodeEventKeys: any | null;
   nodes: any[];
   links: any[];
   linksByLevel: any[];
@@ -22,7 +22,7 @@ class State {
     this.apiHost = (isDevelopment) ? `http://${window.location.hostname}:5001` : '';
     this.isLoading = true;
     this.requestedURL = null;
-    this.eventKeys = null;
+    this.nodeEventKeys = null;
     this.nodes = [];
     this.links = [];
     this.linksByLevel = [];
@@ -47,8 +47,8 @@ export default new Vuex.Store({
     setRequestedUrl(state, url) {
       state.requestedURL = url;
     },
-    setEventKeys(state, eventKeys) {
-      state.eventKeys = Object.assign({}, eventKeys);
+    setNodeEventKeys(state, nodeEventKeys) {
+      state.nodeEventKeys = Object.assign({}, nodeEventKeys);
     },
     addLink(state, link) {
       Vue.set(state.links, state.links.length, link);
@@ -119,12 +119,12 @@ export default new Vuex.Store({
       });
     },
     getEventKeys({ commit, state }) {
-      const path = `${state.apiHost}/api/event_keys`;
+      const path = `${state.apiHost}/api/node_event_keys`;
       const params = { url: state.requestedURL };
       return axios
         .get(path, {params})
         .then((response) => {
-          commit('setEventKeys', response.data);
+          commit('setNodeEventKeys', response.data);
         });
     },
     insertLink({ commit }, link) {

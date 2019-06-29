@@ -20,12 +20,13 @@ class Broadcaster:
         self.channel = ch
 
         body = json.loads(body)
-        event_keys = UnpackHelpers.get_event_keys(
+        event_name = body['event_name']
+        node_event_keys = UnpackHelpers.get_node_event_keys(
             node_url=body['origin_source_url']
         )
         event_data = {
+            'data': body['data'],
             'origin_source_url': body['origin_source_url'],
-            'state': body['state'],
             'source': None,
             'target': None,
         }
@@ -44,6 +45,6 @@ class Broadcaster:
 
         logger.info(event_data['target']['node_url'])
         socketio.emit(
-            event_keys['TREE_UPDATE'],
+            node_event_keys[event_name],
             json.dumps(event_data, default=str)
         )

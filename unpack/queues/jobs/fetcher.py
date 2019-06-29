@@ -93,10 +93,11 @@ class Fetcher:
             )
 
         self.broadcast(
+            event_name=UnpackHelpers.EVENT_NAME['LINK_FETCH_SUCCESS'],
             source_node_uuid=self.source_node_uuid,
             target_node_uuid=self.node_uuid,
             origin_source_url=self.origin_source_url,
-            state=self.state,
+            data=self.state,
         )
 
         if not has_links:
@@ -137,10 +138,11 @@ class Fetcher:
             if target_url == source_url:
                 new_fetcher_state['is_already_in_path'] = True
                 self.broadcast(
+                    event_name=UnpackHelpers.EVENT_NAME['LINK_FETCH_SUCCESS'],
                     source_node_uuid=source_node_uuid,
                     target_node_uuid=target_node_uuid,
                     origin_source_url=self.origin_source_url,
-                    state=new_fetcher_state,
+                    data=new_fetcher_state,
                 )
                 continue
 
@@ -153,10 +155,11 @@ class Fetcher:
             if is_found_in_tree:
                 new_fetcher_state['is_already_in_path'] = True
                 self.broadcast(
+                    event_name=UnpackHelpers.EVENT_NAME['LINK_FETCH_SUCCESS'],
                     source_node_uuid=source_node_uuid,
                     target_node_uuid=target_node_uuid,
                     origin_source_url=self.origin_source_url,
-                    state=new_fetcher_state,
+                    data=new_fetcher_state,
                 )
                 continue
 
@@ -170,15 +173,16 @@ class Fetcher:
                 'rules': self.rules,
             })
 
-    def broadcast(self, source_node_uuid=None, target_node_uuid=None, origin_source_url=None, state=None):
+    def broadcast(self, event_name=None, source_node_uuid=None, target_node_uuid=None, origin_source_url=None, data=None):
         self.channel.basic_publish(
             exchange='',
             routing_key=f'broadcast-{self.origin_source_uuid}',
             body=json.dumps({
+                'event_name': event_name,
                 'source_node_uuid': source_node_uuid,
                 'target_node_uuid': target_node_uuid,
                 'origin_source_url': origin_source_url,
-                'state': state,
+                'data': data,
             }, default=str),
             properties=pika.BasicProperties(
                 delivery_mode=2,  # make message persistent
