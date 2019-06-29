@@ -16,6 +16,8 @@ class State {
   linksByLevel: any[];
   targetSources: any[];
   requiredNodes: any[];
+  numLinks: number;
+  numFetchedLinks: number;
   settings: any;
 
   constructor() {
@@ -28,6 +30,8 @@ class State {
     this.linksByLevel = [];
     this.targetSources = [];
     this.requiredNodes = [];
+    this.numLinks = 0;
+    this.numFetchedLinks = 0;
     this.settings = {
       rules: {
         max_link_depth: 2,
@@ -87,6 +91,14 @@ export default new Vuex.Store({
         Vue.set(state.targetSources, targetUUID, state.targetSources[targetUUID]);
       }
     },
+    addNToNumLinks(state, n) {
+      n = n || 1;
+      state.numLinks += n;
+    },
+    addNToNumFetchedLinks(state, n) {
+      n = n || 1;
+      state.numFetchedLinks += n;
+    },
     resetNodes(state) {
       state.nodes = [];
     },
@@ -137,6 +149,12 @@ export default new Vuex.Store({
       commit('addLink', link);
       commit('addLinkToLevel', { level, link });
       commit('addTargetSource', {targetUUID, sourceUUID});
+    },
+    incrementNumLinks({ commit }) {
+      commit('addNToNumLinks', 1);
+    },
+    incrementNumFetchedLinks({ commit }) {
+      commit('addNToNumFetchedLinks', 1);
     },
   },
 });

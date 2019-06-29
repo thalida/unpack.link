@@ -124,6 +124,13 @@ class Fetcher:
             if not target_node_uuid:
                 target_node_uuid = UnpackHelpers.fetch_node_uuid(target_url)
 
+            self.broadcast(
+                event_name=UnpackHelpers.EVENT_NAME['LINK_FETCH_START'],
+                source_node_uuid=source_node_uuid,
+                target_node_uuid=target_node_uuid,
+                origin_source_url=self.origin_source_url,
+            )
+
             UnpackHelpers.store_link(
                 source_node_uuid,
                 target_node_uuid=target_node_uuid,

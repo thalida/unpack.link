@@ -8,6 +8,7 @@
 				required />
 			<button type="submit" @click="onFormSubmit">unpack</button>
 		</form>
+    {{numFetchedLinks}} / {{numLinks}}
     <div class="tree">
       <Level
         v-for="(links, level) in linksByLevel"
@@ -65,6 +66,14 @@ export default class Results extends Vue {
     return this.$store.state.linksByLevel;
   }
 
+  get numLinks() {
+    return this.$store.state.numLinks;
+  }
+
+  get numFetchedLinks() {
+    return this.$store.state.numFetchedLinks;
+  }
+
   @Watch('eventKeys', {immediate: true})
   onEventKeysChanged(newValue: any) {
     if (typeof newValue === 'undefined' || newValue === null) {
@@ -75,7 +84,11 @@ export default class Results extends Vue {
   }
 
   startListening() {
+    socket.on(this.eventKeys!.LINK_FETCH_START, (rawLink: any) => {
+      this.$store.dispatch('incrementNumLinks');
+    });
     socket.on(this.eventKeys!.LINK_FETCH_SUCCESS, (rawLink: any) => {
+      this.$store.dispatch('incrementNumFetchedLinks');
       this.$store.dispatch('insertLink', this.formatLink(rawLink));
     });
   }
