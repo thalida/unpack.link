@@ -8,11 +8,11 @@ logger = logging.getLogger(__name__)
 
 from pyrabbit.api import Client
 
-cl = Client(f'http://{os.environ["MQ_HOST"]}:55672/api', 'guest', 'guest')
+cl = Client(f'http://{os.environ["UNPACK_HOST"]}:55672/api', 'guest', 'guest')
 
 def main(queue_id):
     connection = pika.BlockingConnection(
-        pika.ConnectionParameters(os.environ['MQ_HOST'])
+        pika.ConnectionParameters(os.environ['UNPACK_HOST'])
     )
     channel = connection.channel()
 
@@ -30,36 +30,52 @@ def main(queue_id):
     check_queue_rate = 2
     containers = []
 
+    broadcast_container_volumes = {
+        '/tmp/unpack_broadcast_worker_logs.log': {'bind': '/tmp/unpack_controller_logs.log', 'mode': 'rw'},
+    }
+    if os.environ['UNPACK_DEBUG'] == 'TRUE':
+        broadcast_container_volumes.update({
+            '/Users/thalida/Repos/unpack.link/unpack': {'bind': '/unpack', 'mode': 'rw'},
+            '/Users/thalida/Repos/unpack.link/controller.py': {'bind': '/controller.py', 'mode': 'rw'},
+        })
+
     broadcast_container = docker_client.containers.run(
         image="unpack_container",
         command=f"queue-broadcast-worker -q {broadcaster_queue_name}",
         environment={
-            'MQ_HOST': os.environ['MQ_HOST'],
+            'UNPACK_HOST': os.environ['UNPACK_HOST'],
+            'UNPACK_DEBUG': os.environ['UNPACK_DEBUG'],
             'UNPACK_DB_NAME': os.environ['UNPACK_DB_NAME'],
             'UNPACK_DB_USER': os.environ['UNPACK_DB_USER'],
             'UNPACK_DB_PASSWORD': os.getenv('UNPACK_DB_PASSWORD'),
         },
-        volumes={
-            '/tmp/unpack_broadcast_worker_logs.log': {'bind': '/tmp/unpack_controller_logs.log', 'mode': 'rw'},
-        },
+        volumes=broadcast_container_volumes,
         detach=True,
     )
     containers.append(broadcast_container)
 
     # Workers to create
     for i in range(5):
+        fetcher_container_volumes = {
+            '/tmp/unpack_fetcher_worker_logs.log': {'bind': '/tmp/unpack_controller_logs.log', 'mode': 'rw'},
+        }
+        if os.environ['UNPACK_DEBUG'] == 'TRUE':
+            fetcher_container_volumes.update({
+                '/Users/thalida/Repos/unpack.link/unpack': {'bind': '/unpack', 'mode': 'rw'},
+                '/Users/thalida/Repos/unpack.link/controller.py': {'bind': '/controller.py', 'mode': 'rw'},
+            })
+
         fetcher_container = docker_client.containers.run(
             image="unpack_container",
             command=f"queue-fetcher-worker -q {fetcher_queue_name}",
             environment={
-                'MQ_HOST': os.environ['MQ_HOST'],
+                'UNPACK_HOST': os.environ['UNPACK_HOST'],
+                'UNPACK_DEBUG': os.environ['UNPACK_DEBUG'],
                 'UNPACK_DB_NAME': os.environ['UNPACK_DB_NAME'],
                 'UNPACK_DB_USER': os.environ['UNPACK_DB_USER'],
                 'UNPACK_DB_PASSWORD': os.getenv('UNPACK_DB_PASSWORD'),
             },
-            volumes={
-                '/tmp/unpack_fetcher_worker_logs.log': {'bind': '/tmp/unpack_controller_logs.log', 'mode': 'rw'},
-            },
+            volumes=fetcher_container_volumes,
             detach=True,
         )
         containers.append(fetcher_container)

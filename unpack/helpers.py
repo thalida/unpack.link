@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 ENV_VARS = {
     'DB': {
-        'HOST': 'MQ_HOST',
+        'HOST': 'UNPACK_HOST',
         'NAME': 'UNPACK_DB_NAME',
         'USER': 'UNPACK_DB_USER',
         'PASSWORD': 'UNPACK_DB_PASSWORD',

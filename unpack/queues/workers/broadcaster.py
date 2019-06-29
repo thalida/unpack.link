@@ -11,7 +11,7 @@ from unpack.queues.jobs.broadcaster import Broadcaster
 
 def main(queue_name):
     connection = pika.BlockingConnection(
-        pika.ConnectionParameters(os.environ['MQ_HOST'])
+        pika.ConnectionParameters(os.environ['UNPACK_HOST'])
     )
     channel = connection.channel()
 

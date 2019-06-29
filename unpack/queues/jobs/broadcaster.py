@@ -12,7 +12,7 @@ from ...content_types.media import ContentTypeMedia
 from ...content_types.base import ContentTypeBase
 
 logger = logging.getLogger(__name__)
-socketio = SocketIO(message_queue=f'amqp://{os.environ["MQ_HOST"]}:5672')
+socketio = SocketIO(message_queue=f'amqp://{os.environ["UNPACK_HOST"]}:5672')
 
 
 class Broadcaster:

@@ -16,11 +16,14 @@ services:
     ports:
       - 5001:5001
     environment:
-      - MQ_HOST
+      - UNPACK_HOST
+      - UNPACK_DEBUG
       - UNPACK_DB_NAME
       - UNPACK_DB_USER
       - UNPACK_DB_PASSWORD
       - PYTHONUNBUFFERED=false
     volumes:
+      - /Users/thalida/Repos/unpack.link/unpack:/unpack
+      - /Users/thalida/Repos/unpack.link/controller.py:/controller.py
       - /var/run/docker.sock:/var/run/docker.sock
       - /tmp/unpack_api_logs.log:/tmp/unpack_controller_logs.log

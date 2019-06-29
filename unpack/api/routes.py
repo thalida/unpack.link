@@ -35,7 +35,7 @@ def unpack():
 
         fetcher_queue_name = f'fetch-{node_uuid}'
 
-        connection = pika.BlockingConnection(pika.ConnectionParameters(os.environ['MQ_HOST']))
+        connection = pika.BlockingConnection(pika.ConnectionParameters(os.environ['UNPACK_HOST']))
         channel = connection.channel()
         channel.queue_declare(queue=fetcher_queue_name)
 
@@ -51,19 +51,28 @@ def unpack():
             ))
 
         client = docker.from_env()
+
+        volumes = {
+            '/var/run/docker.sock': {'bind': '/var/run/docker.sock', 'mode': 'ro'},
+            '/tmp/unpack_manager_logs.log': {'bind': '/tmp/unpack_controller_logs.log', 'mode': 'rw'},
+        }
+        if os.environ['UNPACK_DEBUG'] == 'TRUE':
+            volumes.update({
+                '/Users/thalida/Repos/unpack.link/unpack': {'bind': '/unpack', 'mode': 'rw'},
+                '/Users/thalida/Repos/unpack.link/controller.py': {'bind': '/controller.py', 'mode': 'rw'},
+            })
+
         container = client.containers.run(
             image="unpack_container",
             command=f"queue-manager -q {node_uuid}",
             environment={
-                'MQ_HOST': os.environ['MQ_HOST'],
+                'UNPACK_HOST': os.environ['UNPACK_HOST'],
+                'UNPACK_DEBUG': os.environ['UNPACK_DEBUG'],
                 'UNPACK_DB_NAME': os.environ['UNPACK_DB_NAME'],
                 'UNPACK_DB_USER': os.environ['UNPACK_DB_USER'],
                 'UNPACK_DB_PASSWORD': os.getenv('UNPACK_DB_PASSWORD'),
             },
-            volumes={
-                '/var/run/docker.sock': {'bind': '/var/run/docker.sock', 'mode': 'ro'},
-                '/tmp/unpack_manager_logs.log': {'bind': '/tmp/unpack_controller_logs.log', 'mode': 'rw'},
-            },
+            volumes=volumes,
             detach=True,
         )
 

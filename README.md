@@ -2,7 +2,8 @@
 
 ## Starting Services
 
-Use `export MQ_HOST=10.0.12.195 && docker-compose up --build`
+Use `export UNPACK_HOST=10.0.12.195 && docker-compose up --build`
+'UNPACK_DEBUG`
 Check that it's running with `docker ps`
 
 
