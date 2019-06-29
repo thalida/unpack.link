@@ -65,7 +65,6 @@ def unpack():
                 '/tmp/unpack_manager_logs.log': {'bind': '/tmp/unpack_controller_logs.log', 'mode': 'rw'},
             },
             detach=True,
-            auto_remove=True,
         )
 
         connection.close()

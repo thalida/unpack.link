@@ -43,7 +43,6 @@ def main(queue_id):
             '/tmp/unpack_broadcast_worker_logs.log': {'bind': '/tmp/unpack_controller_logs.log', 'mode': 'rw'},
         },
         detach=True,
-        auto_remove=True,
     )
     containers.append(broadcast_container)
 
@@ -62,7 +61,6 @@ def main(queue_id):
                 '/tmp/unpack_fetcher_worker_logs.log': {'bind': '/tmp/unpack_controller_logs.log', 'mode': 'rw'},
             },
             detach=True,
-            auto_remove=True,
         )
         containers.append(fetcher_container)
 
