@@ -104,12 +104,6 @@ class Fetcher:
         elif not has_reached_max_depth:
             self.fetch_links(raw_links)
 
-        if not self.is_origin_node:
-            UnpackHelpers.remove_active_job(
-                self.source_node_uuid,
-                self.node_uuid
-            )
-
     def fetch_links(self, raw_links):
         for raw_link in raw_links:
             source_url = self.node_url
@@ -163,7 +157,6 @@ class Fetcher:
                 )
                 continue
 
-            UnpackHelpers.store_active_job(source_node_uuid, target_node_uuid)
             self.publish_child({
                 'node_uuid': target_node_uuid,
                 'node_url': target_url,

@@ -43,7 +43,11 @@ class Broadcaster:
                 'node_uuid': body['target_node_uuid'],
             }
 
-        logger.info(event_data['target']['node_url'])
+        if event_data['target']:
+            logger.info(event_data['target']['node_url'])
+        else:
+            logger.info(f'No target url provided for {event_data["origin_source_url"]}')
+
         socketio.emit(
             node_event_keys[event_name],
             json.dumps(event_data, default=str)

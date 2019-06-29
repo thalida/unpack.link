@@ -181,42 +181,6 @@ class UnpackHelpers:
             )
 
     @staticmethod
-    def store_active_job(source_node_uuid, target_node_uuid):
-        try:
-            query = """
-                    INSERT INTO active_job (source_node_uuid, target_node_uuid)
-                    VALUES (%s, %s)
-                    ON CONFLICT (source_node_uuid, target_node_uuid) DO NOTHING
-                    RETURNING (source_node_uuid, target_node_uuid)
-                    """
-            data = (source_node_uuid, target_node_uuid)
-            return UnpackHelpers.execute_sql('fetchone', query, data)
-        except Exception:
-            UnpackHelpers.raise_error(
-                'Unpack: Error inserting a new active job: {source} to {target}',
-                source=source_node_uuid,
-                target=target_node_uuid
-            )
-
-    @staticmethod
-    def remove_active_job(source_node_uuid, target_node_uuid):
-        try:
-            query = """
-                    DELETE FROM active_job
-                    WHERE source_node_uuid = %s
-                      AND target_node_uuid = %s
-                    RETURNING (source_node_uuid, target_node_uuid)
-                    """
-            data = (source_node_uuid, target_node_uuid)
-            return UnpackHelpers.execute_sql('fetchone', query, data)
-        except Exception:
-            UnpackHelpers.raise_error(
-                'Unpack: Error deleting active job of {source} to {target}',
-                source=source_node_uuid,
-                target=target_node_uuid
-            )
-
-    @staticmethod
     def fetch_node_metadata(node_uuid, min_update_date=None):
         try:
             if min_update_date is not None:
