@@ -54,8 +54,8 @@ export default class Results extends Vue {
     this.$store.commit('setRequestedURL', newUrl);
   }
 
-  get eventKeys() {
-    return this.$store.state.eventKeys;
+  get nodeEventKeys() {
+    return this.$store.state.nodeEventKeys;
   }
 
   get isLoading() {
@@ -74,8 +74,8 @@ export default class Results extends Vue {
     return this.$store.state.numFetchedLinks;
   }
 
-  @Watch('eventKeys', {immediate: true})
-  onEventKeysChanged(newValue: any) {
+  @Watch('nodeEventKeys', {immediate: true})
+  onNodeEventKeysChanged(newValue: any) {
     if (typeof newValue === 'undefined' || newValue === null) {
       return;
     }
@@ -84,10 +84,10 @@ export default class Results extends Vue {
   }
 
   startListening() {
-    socket.on(this.eventKeys!.LINK_FETCH_START, (rawLink: any) => {
+    socket.on(this.nodeEventKeys!.LINK_FETCH_START, (rawLink: any) => {
       this.$store.dispatch('incrementNumLinks');
     });
-    socket.on(this.eventKeys!.LINK_FETCH_SUCCESS, (rawLink: any) => {
+    socket.on(this.nodeEventKeys!.LINK_FETCH_SUCCESS, (rawLink: any) => {
       this.$store.dispatch('incrementNumFetchedLinks');
       this.$store.dispatch('insertLink', this.formatLink(rawLink));
     });

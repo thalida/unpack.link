@@ -142,7 +142,7 @@ export default new Vuex.Store({
     insertLink({ commit }, link) {
       const sourceUUID: string = (link.source) ? link.source.node_uuid : null;
       const targetUUID: string = link.target.node_uuid;
-      const level: number = link.state.level;
+      const level: number = link.data.level;
 
       commit('addNode', link.source);
       commit('addNode', link.target);
