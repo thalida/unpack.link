@@ -31,12 +31,11 @@ class ContentTypeTwitter(ContentTypeBase):
             links = []
 
             # Get tweet media
-            media = tweet['entities']['media'] if tweet['entities'].get('media') else [
-            ]
+            media = tweet['entities']['media'] if tweet['entities'].get('media') else []
             for m in media:
                 links.append({
                     'target_node_url': m['media_url_https'],
-                    'link_type': 'link',
+                    'link_type': 'media',
                 })
 
             # Get tweet external links

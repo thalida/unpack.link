@@ -32,6 +32,7 @@ deleted_quoted_tweet = 946795191784132610
     - [x] socketio setup
     - [x] render node on socket push
     - [x] setup proper storage
+    - [ ] Fix counts of # of nodes found
     - [ ] Levels
         - [x] Render each link in it's level
         - [ ] not from same domain, then same domain
@@ -42,10 +43,13 @@ deleted_quoted_tweet = 946795191784132610
 - [x] Move upnack folder to top level
 - [ ] Fetching
     - [ ] Cache db queries
-    - [ ] Update tweet fetching (never stop follow tree to non-tweet)
-    - [ ] Don't fetch css or fonts
-    - [ ] Don't store site contents
+    - [x] Update tweet fetching (never stop follow tree to non-tweet)
+    - [x] Don't fetch css or fonts
+    - [x] Don't store site contents
     - [ ] Store link index on page
+    - [ ] Don't follow no-follow sites
+    - [ ] Create a custom unpack follow
+    - [ ] Create a custom unpack user agent for clear debugging
 - [-] Add better comments and documentation
     - [x] Figure out one of those self documenting sites (sphinx)
     - [-] Vue/JS autodocs(?)

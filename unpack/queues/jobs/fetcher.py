@@ -33,6 +33,7 @@ class Fetcher:
         'force_from_web': False,
         'force_from_db': False,
         'max_link_depth': 2,
+        'twitter_use_max_link_depth': False,
     }
 
     def __init__(self, ch, method, properties, body):
@@ -81,8 +82,6 @@ class Fetcher:
         )
 
         has_links = len(raw_links) > 0
-        has_reached_max_depth = self.state['level'] + \
-            1 > self.rules['max_link_depth']
 
         if not node_details.get('is_from_db', True):
             UnpackHelpers.store_node_metadata(
@@ -101,11 +100,27 @@ class Fetcher:
 
         if not has_links:
             UnpackHelpers.store_link(self.node_uuid)
-        elif not has_reached_max_depth:
-            self.fetch_links(raw_links)
+            return
 
-    def fetch_links(self, raw_links):
+        self.fetch_links(
+            raw_links=raw_links,
+            type_cls=type_cls,
+        )
+
+    def fetch_links(self, raw_links, type_cls):
+        has_reached_max_depth = self.state['level'] + 1 > self.rules['max_link_depth']
+
+        if has_reached_max_depth:
+            if type_cls.TYPE != 'twitter':
+                return
+            elif self.rules['twitter_use_max_link_depth']:
+                return
+
         for raw_link in raw_links:
+            link_type = raw_link.get('link_type')
+            if has_reached_max_depth and link_type in ['media', 'link']:
+                continue
+
             source_url = self.node_url
             source_node_uuid = self.node_uuid
             target_url = raw_link.get('target_node_url')
@@ -123,7 +138,7 @@ class Fetcher:
             UnpackHelpers.store_link(
                 source_node_uuid,
                 target_node_uuid=target_node_uuid,
-                link_type=raw_link.get('link_type'),
+                link_type=link_type,
                 weight=raw_link.get('weight', self.DEFAULT_STATE['weight']),
             )
 

@@ -37,22 +37,29 @@ class ContentTypeBase:
         if rules['force_from_db']:
             is_from_db = True
             raw_node_details, raw_links = cls.get_node_and_links_from_db(
-                node_uuid, node_url)
+                node_uuid,
+                node_url
+            )
         elif rules['force_from_web']:
             is_from_db = False
             raw_node_details, raw_links = cls.get_node_and_links_from_web(
-                node_url, url_matches=url_matches)
+                node_url,
+                url_matches=url_matches
+            )
         else:
             now = datetime.datetime.now()
-            min_update_date = now - \
-                datetime.timedelta(seconds=rules['refresh_after'])
+            min_update_date = now - datetime.timedelta(seconds=rules['refresh_after'])
             raw_node_details = UnpackHelpers.fetch_node_metadata(
-                node_uuid, min_update_date=min_update_date)
+                node_uuid,
+                min_update_date=min_update_date
+            )
 
             if raw_node_details is None:
                 is_from_db = False
                 raw_node_details, raw_links = cls.get_node_and_links_from_web(
-                    node_url, url_matches=url_matches)
+                    node_url,
+                    url_matches=url_matches
+                )
             else:
                 is_from_db = True
                 raw_links = UnpackHelpers.fetch_links_by_source(node_uuid)
@@ -79,42 +86,48 @@ class ContentTypeBase:
     def get_node_and_links_from_web(cls, node_url, url_matches=None):
         try:
             page_source = requests.get(node_url).text
-            # driver = webdriver.Chrome(ChromeDriverManager('2.42').install(), chrome_options=options)
-            # driver.get(node_url)
-            # page_source = driver.page_source
-            # driver.close()
-        # except selenium.common.exceptions.WebDriverException as e:
-        #     node_details = cls.setup_node_details(node_data=str(e), is_error=True)
-        #     raw_links = []
         except Exception as e:
             node_details = cls.setup_node_details(
-                node_data=str(e), is_error=True)
+                node_data=str(e),
+                is_error=True
+            )
             raw_links = []
         else:
             sel = Selector(text=page_source)
 
-            node_data = {'url_matches': url_matches,
-                         'page_source': page_source}
+            twitter_meta = [
+                {
+                    'name': n.css('::attr(name)').get(),
+                    'content': n.css('::attr(content)').get()
+                }
+                for n in sel.css('meta[name*=twitter]')
+            ]
+            og_meta = [
+                {
+                    'name': n.css('::attr(name)').get(),
+                    'content': n.css('::attr(content)').get()
+                }
+                for n in sel.css('meta[name*=og]')
+            ]
+            node_data = {
+                'base_url': node_url,
+                'meta': {
+                    'title': sel.css('title::text').getall(),
+                    'description': sel.css('meta[name=description]::attr(content)').getall(),
+                    'twitter': twitter_meta,
+                    'og': og_meta,
+                    'favicon': sel.css('link[rel*=shortcut]::attr(href)').get(),
+                }
+            }
             node_details = cls.setup_node_details(node_data=node_data)
 
-            page_links = sel.css('body *::attr(href)').getall()
-            num_page_links = len(page_links)
-            found_links = {}
+            page_links = sel.css('body a::attr(href), body img::attr(src)').getall()
             raw_links = []
-            num_raw_links = 0
             for idx, link in enumerate(page_links):
-                if link in found_links:
-                    found_idx = found_links.get(link)
-                    raw_links[found_idx]['weight'] += 1
-                    continue
-
                 raw_links.append({
                     'target_node_url': urljoin(node_url, link),
                     'link_type': 'link',
-                    'weight': num_page_links - idx
+                    'weight': idx
                 })
-
-                found_links[link] = num_raw_links
-                num_raw_links += 1
 
         return node_details, raw_links
