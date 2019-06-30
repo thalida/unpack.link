@@ -42,6 +42,7 @@ deleted_quoted_tweet = 946795191784132610
 - [x] Move upnack folder to top level
 - [ ] Fetching
     - [ ] Cache db queries
+    - [ ] Update tweet fetching (never stop follow tree to non-tweet)
     - [ ] Don't fetch css or fonts
     - [ ] Don't store site contents
     - [ ] Store link index on page
