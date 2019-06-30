@@ -50,30 +50,9 @@ def unpack():
                 delivery_mode=2,  # make message persistent
             ))
 
-        client = docker.from_env()
-
-        volumes = {
-            '/var/run/docker.sock': {'bind': '/var/run/docker.sock', 'mode': 'ro'},
-            '/tmp/unpack_manager_logs.log': {'bind': '/tmp/unpack_controller_logs.log', 'mode': 'rw'},
-        }
-        if os.environ['UNPACK_DEBUG'] == 'TRUE':
-            volumes.update({
-                '/Users/thalida/Repos/unpack.link/unpack': {'bind': '/unpack', 'mode': 'rw'},
-                '/Users/thalida/Repos/unpack.link/controller.py': {'bind': '/controller.py', 'mode': 'rw'},
-            })
-
-        container = client.containers.run(
-            image="unpack_container",
-            command=f"queue-manager -q {node_uuid}",
-            environment={
-                'UNPACK_HOST': os.environ['UNPACK_HOST'],
-                'UNPACK_DEBUG': os.environ['UNPACK_DEBUG'],
-                'UNPACK_DB_NAME': os.environ['UNPACK_DB_NAME'],
-                'UNPACK_DB_USER': os.environ['UNPACK_DB_USER'],
-                'UNPACK_DB_PASSWORD': os.getenv('UNPACK_DB_PASSWORD'),
-            },
-            volumes=volumes,
-            detach=True,
+        UnpackHelpers.start_docker_container(
+            container_name=UnpackHelpers.DOCKER_CONTAINER_NAMES['QUEUE_MANAGER'],
+            queue_name=node_uuid,
         )
 
         connection.close()

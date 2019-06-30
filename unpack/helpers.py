@@ -4,6 +4,7 @@ import json
 import logging
 import uuid
 
+import docker
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
@@ -34,6 +35,25 @@ class UnpackHelpers:
         'LINK_FETCH_SUCCESS': 'LINK_FETCH_SUCCESS',
     }
 
+    DOCKER_CONTAINER_SETTINGS = {
+        'QUEUE_MANAGER': {
+            'command': 'queue-manager',
+            'logfile': '/tmp/unpack_manager_logs.log',
+            'can_create_containers': True,
+        },
+        'QUEUE_FETCHER_WORKER': {
+            'command': 'queue-fetcher-worker',
+            'logfile': '/tmp/unpack_fetcher_worker_logs.log',
+            'can_create_containers': False,
+        },
+        'QUEUE_BROADCAST_WORKER': {
+            'command': 'queue-broadcast-worker',
+            'logfile': '/tmp/unpack_broadcast_worker_logs.log',
+            'can_create_containers': False,
+        },
+    }
+    DOCKER_CONTAINER_NAMES = { k: k for k in DOCKER_CONTAINER_SETTINGS.keys()}
+
     @staticmethod
     def hash_url(url):
         return hashlib.md5(str(url).encode('utf-8')).hexdigest()
@@ -59,6 +79,44 @@ class UnpackHelpers:
         node_event_keys = {evt: f'{evt.lower()}:{node_url_hash}' for evt in UnpackHelpers.EVENT_NAME}
 
         return node_event_keys
+
+    @staticmethod
+    def start_docker_container(container_name, queue_name):
+        container_settings = UnpackHelpers.DOCKER_CONTAINER_SETTINGS[container_name]
+        docker_client = docker.from_env()
+        volumes = {}
+
+        if container_settings['can_create_containers']:
+            volumes.update({
+                '/var/run/docker.sock': {'bind': '/var/run/docker.sock', 'mode': 'ro'}
+            })
+
+        if container_settings['logfile']:
+            volumes.update({
+                container_settings['logfile']: {'bind': '/tmp/unpack_controller_logs.log', 'mode': 'rw'},
+            })
+
+        if os.environ['UNPACK_DEBUG'] == 'TRUE':
+            volumes.update({
+                '/Users/thalida/Repos/unpack.link/unpack': {'bind': '/unpack', 'mode': 'rw'},
+                '/Users/thalida/Repos/unpack.link/controller.py': {'bind': '/controller.py', 'mode': 'rw'},
+            })
+
+        container = docker_client.containers.run(
+            image="unpack_container",
+            command=f"{container_settings['command']} -q {queue_name}",
+            environment={
+                'UNPACK_HOST': os.environ['UNPACK_HOST'],
+                'UNPACK_DEBUG': os.environ['UNPACK_DEBUG'],
+                'UNPACK_DB_NAME': os.environ['UNPACK_DB_NAME'],
+                'UNPACK_DB_USER': os.environ['UNPACK_DB_USER'],
+                'UNPACK_DB_PASSWORD': os.getenv('UNPACK_DB_PASSWORD'),
+            },
+            volumes=volumes,
+            detach=True,
+        )
+
+        return container
 
     @staticmethod
     def execute_sql(fetch_action, query, query_args):

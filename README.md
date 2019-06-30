@@ -44,6 +44,7 @@ deleted_quoted_tweet = 946795191784132610
         - [ ] Add checkbox to show the links available with that link
     - [ ] Site Data
         - [ ] fetch site data for node on quick view load
+    - [ ] Update python functions to use proper/better named param style
 - [x] Move upnack folder to top level
 - [ ] Cache db queries
 - [ ] Don't fetch css or fonts

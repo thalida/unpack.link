@@ -15,6 +15,7 @@ def main(queue_name):
     )
     channel = connection.channel()
 
+    channel.basic_qos(prefetch_count=5)
     channel.basic_consume(queue=queue_name, on_message_callback=Fetcher)
 
 
