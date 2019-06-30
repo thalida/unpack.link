@@ -142,9 +142,9 @@ class Fetcher:
                 continue
 
             is_found_in_tree = UnpackHelpers.check_target_node_in_tree(
-                self.origin_source_uuid,
-                target_node_uuid,
-                new_fetcher_state['level'],
+                start_node_uuid=self.origin_source_uuid,
+                target_node_uuid=target_node_uuid,
+                level=new_fetcher_state['level'],
                 min_count=2
             )
             if is_found_in_tree:

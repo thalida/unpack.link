@@ -62,15 +62,15 @@ def main():
 
     elif args.action == 'queue-manager':
         import unpack.queues.manager
-        unpack.queues.manager.main(args.q)
+        unpack.queues.manager.main(queue_id=args.q)
 
     elif args.action == 'queue-fetcher-worker':
         import unpack.queues.workers.fetcher
-        unpack.queues.workers.fetcher.main(args.q)
+        unpack.queues.workers.fetcher.main(queue_name=args.q)
 
     elif args.action == 'queue-broadcast-worker':
         import unpack.queues.workers.broadcaster
-        unpack.queues.workers.broadcaster.main(args.q)
+        unpack.queues.workers.broadcaster.main(queue_name=args.q)
 
 if __name__ == '__main__':
     main()

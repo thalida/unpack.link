@@ -63,22 +63,24 @@ class UnpackHelpers:
         return UnpackHelpers.hash_url(node_url)
 
     @staticmethod
-    def get_node_event_keys(node_url_hash=None, node_url=None, node_uuid=None):
-        if node_url_hash is None and node_url is None and node_uuid is None:
-            raise AttributeError('get_node_event_keys requires a node_url_hash, node_url, or node_uuid')
-
+    def get_node_event_keys(node_url_hash, node_url=None, node_uuid=None):
         if node_url_hash is None:
-            if node_url is None and node_uuid is not None:
+            if node_uuid is not None:
                 node_url = UnpackHelpers.fetch_node_url(node_uuid)
 
-            node_url_hash = UnpackHelpers.get_url_hash(node_url)
+            if node_url is not None:
+                node_url_hash = UnpackHelpers.get_url_hash(node_url)
 
-        if node_url_hash is None:
-            raise AttributeError('get_node_event_keys requires a node_url_hash, node_url, or node_uuid')
-
-        node_event_keys = {evt: f'{evt.lower()}:{node_url_hash}' for evt in UnpackHelpers.EVENT_NAME}
-
-        return node_event_keys
+        try:
+            node_event_keys = {evt: f'{evt.lower()}:{node_url_hash}' for evt in UnpackHelpers.EVENT_NAME}
+            return node_event_keys
+        except Exception:
+            UnpackHelpers.raise_error(
+                'Error getting node_event_keys',
+                node_url_hash=node_url_hash,
+                node_url=node_url,
+                node_uuid=node_uuid,
+            )
 
     @staticmethod
     def start_docker_container(container_name, queue_name):
@@ -148,7 +150,7 @@ class UnpackHelpers:
 
             paths.append(link)
             paths = UnpackHelpers.get_paths_for_node(
-                link['target_node_uuid'],
+                node_uuid=link['target_node_uuid'],
                 parent_node_uuid=link['source_node_uuid'],
                 stop_node_uuid=stop_node_uuid,
                 curr_level=curr_level,
@@ -158,19 +160,12 @@ class UnpackHelpers:
 
         return paths
 
-    # This function is currently not used
-    @staticmethod
-    def check_target_node_in_path(start_node_uuid, end_node_uuid, target_node_uuid):
-        paths = UnpackHelpers.get_paths_for_node(start_node_uuid, stop_node_uuid=end_node_uuid)
-        for path in paths:
-            if path['target_node_uuid'] == target_node_uuid:
-                return True
-
-        return False
-
     @staticmethod
     def check_target_node_in_tree(start_node_uuid, target_node_uuid, level, min_count=1):
-        paths = UnpackHelpers.get_paths_for_node(start_node_uuid, stop_level=level)
+        paths = UnpackHelpers.get_paths_for_node(
+            node_uuid=start_node_uuid,
+            stop_level=level
+        )
         num_times_found = 0
         for path in paths:
             if path['target_node_uuid'] == target_node_uuid:

@@ -20,7 +20,10 @@ api_routes = Blueprint(
 def node_event_keys():
     try:
         node_url = request.args.get('url')
-        node_event_keys = UnpackHelpers.get_node_event_keys(node_url=node_url)
+        node_event_keys = UnpackHelpers.get_node_event_keys(
+            node_url_hash=None,
+            node_url=node_url,
+        )
         return jsonify(node_event_keys)
     except Exception:
         logger.exception('Error GET node_event_keys')

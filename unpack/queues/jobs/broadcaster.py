@@ -22,7 +22,8 @@ class Broadcaster:
         body = json.loads(body)
         event_name = body['event_name']
         node_event_keys = UnpackHelpers.get_node_event_keys(
-            node_url=body['origin_source_url']
+            node_url_hash=None,
+            node_url=body['origin_source_url'],
         )
         event_data = {
             'data': body['data'],
