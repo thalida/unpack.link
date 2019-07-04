@@ -16,7 +16,7 @@ root_logger = logging.getLogger()
 
 # Create handlers
 c_handler = logging.StreamHandler()
-f_handler = logging.FileHandler('/tmp/unpack_controller_logs.log')
+f_handler = logging.FileHandler('/tmp/unpack_logs.log')
 
 # Create formatters and add it to handlers
 c_format = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
@@ -52,7 +52,7 @@ def main():
         ],
         help='Unpack queue name'
     )
-    parser.add_argument('-q', help="Queue Name")
+    parser.add_argument('-q', '--queue', help="Queue Name")
 
     args = parser.parse_args()
 
@@ -62,15 +62,15 @@ def main():
 
     elif args.action == 'queue-manager':
         import unpack.queues.manager
-        unpack.queues.manager.main(queue_id=args.q)
+        unpack.queues.manager.main(queue_id=args.queue)
 
     elif args.action == 'queue-fetcher-worker':
         import unpack.queues.workers.fetcher
-        unpack.queues.workers.fetcher.main(queue_name=args.q)
+        unpack.queues.workers.fetcher.main(queue_name=args.queue)
 
     elif args.action == 'queue-broadcast-worker':
         import unpack.queues.workers.broadcaster
-        unpack.queues.workers.broadcaster.main(queue_name=args.q)
+        unpack.queues.workers.broadcaster.main(queue_name=args.queue)
 
 if __name__ == '__main__':
     main()

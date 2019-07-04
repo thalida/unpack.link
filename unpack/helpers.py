@@ -37,19 +37,14 @@ class UnpackHelpers:
 
     DOCKER_CONTAINER_SETTINGS = {
         'QUEUE_MANAGER': {
-            'command': 'queue-manager',
-            'logfile': '/tmp/unpack_manager_logs.log',
+            'controller_action': 'queue-manager',
             'can_create_containers': True,
         },
         'QUEUE_FETCHER_WORKER': {
-            'command': 'queue-fetcher-worker',
-            'logfile': '/tmp/unpack_fetcher_worker_logs.log',
-            'can_create_containers': False,
+            'controller_action': 'queue-fetcher-worker',
         },
         'QUEUE_BROADCAST_WORKER': {
-            'command': 'queue-broadcast-worker',
-            'logfile': '/tmp/unpack_broadcast_worker_logs.log',
-            'can_create_containers': False,
+            'controller_action': 'queue-broadcast-worker',
         },
     }
     DOCKER_CONTAINER_NAMES = { k: k for k in DOCKER_CONTAINER_SETTINGS.keys()}
@@ -84,21 +79,19 @@ class UnpackHelpers:
 
     @staticmethod
     def start_docker_container(container_name, queue_name):
-        container_settings = UnpackHelpers.DOCKER_CONTAINER_SETTINGS[container_name]
         docker_client = docker.from_env()
+        container_settings = UnpackHelpers.DOCKER_CONTAINER_SETTINGS[container_name]
         volumes = {}
+        action = container_settings['controller_action']
+        command = f"{action} -q {queue_name}"
 
-        if container_settings['can_create_containers']:
+        if container_settings.get('can_create_containers', False):
             volumes.update({
-                '/var/run/docker.sock': {'bind': '/var/run/docker.sock', 'mode': 'ro'}
+                '/var/run/docker.sock': {'bind': '/var/run/docker.sock', 'mode': 'ro'},
+                f'/tmp/unpack_{action}_logs.log': {'bind': '/tmp/unpack_logs.log', 'mode': 'rw'},
             })
 
-        if container_settings['logfile']:
-            volumes.update({
-                container_settings['logfile']: {'bind': '/tmp/unpack_controller_logs.log', 'mode': 'rw'},
-            })
-
-        if os.environ['UNPACK_DEBUG'] == 'TRUE':
+        if os.environ['UNPACK_DEV_ENV'] == 'TRUE':
             volumes.update({
                 '/Users/thalida/Repos/unpack.link/unpack': {'bind': '/unpack', 'mode': 'rw'},
                 '/Users/thalida/Repos/unpack.link/controller.py': {'bind': '/controller.py', 'mode': 'rw'},
@@ -106,10 +99,11 @@ class UnpackHelpers:
 
         container = docker_client.containers.run(
             image="unpack_container",
-            command=f"{container_settings['command']} -q {queue_name}",
+            command=command,
             environment={
                 'UNPACK_HOST': os.environ['UNPACK_HOST'],
-                'UNPACK_DEBUG': os.environ['UNPACK_DEBUG'],
+                'UNPACK_DEV_ENV': os.environ['UNPACK_DEV_ENV'],
+                'UNPACK_DEV_PROFILER': os.environ['UNPACK_DEV_PROFILER'],
                 'UNPACK_DB_NAME': os.environ['UNPACK_DB_NAME'],
                 'UNPACK_DB_USER': os.environ['UNPACK_DB_USER'],
                 'UNPACK_DB_PASSWORD': os.getenv('UNPACK_DB_PASSWORD'),

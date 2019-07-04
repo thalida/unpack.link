@@ -17,6 +17,9 @@ kombu = "*"
 flask-cors = "*"
 docker = "*"
 pyrabbit = "*"
+snakeviz = "*"
+pyprof2calltree = "*"
+pycurl = "*"
 
 [dev-packages]
 pylint = "*"
