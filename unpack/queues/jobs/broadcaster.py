@@ -7,9 +7,6 @@ import logging
 from flask_socketio import SocketIO, emit
 
 from ...helpers import UnpackHelpers
-from ...content_types.twitter import ContentTypeTwitter
-from ...content_types.media import ContentTypeMedia
-from ...content_types.base import ContentTypeBase
 
 logger = logging.getLogger(__name__)
 socketio = SocketIO(message_queue=f'amqp://{os.environ["UNPACK_HOST"]}:5672')
