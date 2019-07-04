@@ -85,7 +85,7 @@ class ContentTypeBase:
     @classmethod
     def get_node_and_links_from_web(cls, node_url, url_matches=None):
         try:
-            page_source = requests.get(node_url).text
+            page_source = requests.get(node_url, timeout=(2, 5)).text
         except Exception as e:
             node_details = cls.setup_node_details(
                 node_data=str(e),
