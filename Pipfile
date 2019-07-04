@@ -20,6 +20,7 @@ pyrabbit = "*"
 snakeviz = "*"
 pyprof2calltree = "*"
 pycurl = "*"
+redis = "*"
 
 [dev-packages]
 pylint = "*"
