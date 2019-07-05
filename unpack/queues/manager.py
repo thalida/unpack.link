@@ -27,9 +27,8 @@ def main(queue_id):
 
     logger.info(f'Creating queues for id: {queue_id}')
 
-    # docker_client = docker.from_env()
     empty_since = None
-    queue_ttl = 10 * 60
+    queue_ttl = 5 * 60
     check_queue_rate = 2
     containers = []
 
@@ -40,7 +39,7 @@ def main(queue_id):
     )
     containers.append(broadcast_container)
 
-    for i in range(5):
+    for i in range(10):
         fetcher_container = UnpackHelpers.start_docker_container(
             container_name=UnpackHelpers.DOCKER_CONTAINER_NAMES['QUEUE_FETCHER_WORKER'],
             queue_name=fetcher_queue_name,
