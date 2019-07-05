@@ -40,16 +40,15 @@ class Fetcher:
 
     def __init__(self, ch, method, properties, body):
         self.channel = ch
+        self.queue_unique_id = UnpackHelpers.get_queue_unique_id_from_name(method.routing_key)
 
         body = json.loads(body)
 
         if body.get('node_uuid') is None:
-            body['node_uuid'] = UnpackHelpers.fetch_node_uuid(
-                body.get('node_url'))
+            body['node_uuid'] = UnpackHelpers.fetch_node_uuid(body.get('node_url'))
 
         if body.get('node_url') is None:
-            body['node_url'] = UnpackHelpers.fetch_node_url(
-                body.get('node_uuid'))
+            body['node_url'] = UnpackHelpers.fetch_node_url(body.get('node_uuid'))
 
         state = body.get('state', {})
         self.state = {**self.DEFAULT_STATE, **state}
@@ -74,8 +73,7 @@ class Fetcher:
         if self.node_url is None:
             return
 
-        type_cls, node_url_match = Fetcher.get_node_type_class_by_url(
-            self.node_url)
+        type_cls, node_url_match = Fetcher.get_node_type_class_by_url(self.node_url)
         node_details, raw_links = type_cls.fetch(
             self.node_uuid,
             self.node_url,
@@ -158,7 +156,7 @@ class Fetcher:
                 )
                 continue
 
-            cache_key = f'{self.origin_source_uuid}:{target_node_uuid}'
+            cache_key = f'{self.queue_unique_id}:{target_node_uuid}'
 
             if r.exists(cache_key):
                 new_fetcher_state['is_already_in_path'] = True
@@ -182,9 +180,10 @@ class Fetcher:
             })
 
     def broadcast(self, event_name=None, source_node_uuid=None, target_node_uuid=None, data=None):
+        queue_name = UnpackHelpers.get_queue_name('broadcast', self.queue_unique_id)
         self.channel.basic_publish(
             exchange='',
-            routing_key=f'broadcast-{self.origin_source_uuid}',
+            routing_key=queue_name,
             body=json.dumps({
                 'event_name': event_name,
                 'source_node_uuid': source_node_uuid,
@@ -197,9 +196,10 @@ class Fetcher:
             ))
 
     def publish_child(self, body):
+        queue_name = UnpackHelpers.get_queue_name('fetch', self.queue_unique_id)
         self.channel.basic_publish(
             exchange='',
-            routing_key=f'fetch-{self.origin_source_uuid}',
+            routing_key=queue_name,
             body=json.dumps(body),
             properties=pika.BasicProperties(
                 delivery_mode=2,  # make message persistent

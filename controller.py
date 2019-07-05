@@ -50,9 +50,9 @@ def main():
             'queue-fetcher-worker',
             'queue-broadcast-worker',
         ],
-        help='Unpack queue name'
+        help='Unpack action'
     )
-    parser.add_argument('-q', '--queue', help="Queue Name")
+    parser.add_argument('-q', '--queue', help="Queue Unique Id")
 
     args = parser.parse_args()
 
@@ -62,15 +62,15 @@ def main():
 
     elif args.action == 'queue-manager':
         import unpack.queues.manager
-        unpack.queues.manager.main(queue_id=args.queue)
+        unpack.queues.manager.main(queue_unique_id=args.queue)
 
     elif args.action == 'queue-fetcher-worker':
         import unpack.queues.workers.fetcher
-        unpack.queues.workers.fetcher.main(queue_name=args.queue)
+        unpack.queues.workers.fetcher.main(queue_unique_id=args.queue)
 
     elif args.action == 'queue-broadcast-worker':
         import unpack.queues.workers.broadcaster
-        unpack.queues.workers.broadcaster.main(queue_name=args.queue)
+        unpack.queues.workers.broadcaster.main(queue_unique_id=args.queue)
 
 if __name__ == '__main__':
     main()

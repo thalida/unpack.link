@@ -13,36 +13,42 @@ from ..helpers import UnpackHelpers
 cl = Client(f'http://{os.environ["UNPACK_HOST"]}:55672/api', 'guest', 'guest')
 
 
-def main(queue_id):
+def main(queue_unique_id):
     connection = pika.BlockingConnection(
         pika.ConnectionParameters(os.environ['UNPACK_HOST'])
     )
     channel = connection.channel()
 
-    fetcher_queue_name = f'fetch-{queue_id}'
-    broadcaster_queue_name = f'broadcast-{queue_id}'
+    fetcher_queue_name = UnpackHelpers.get_queue_name(
+        queue_type='fetch',
+        queue_unique_id=queue_unique_id
+    )
+    broadcaster_queue_name = UnpackHelpers.get_queue_name(
+        queue_type='broadcast',
+        queue_unique_id=queue_unique_id
+    )
 
     fetcher_q = channel.queue_declare(queue=fetcher_queue_name)
     broadcaster_q = channel.queue_declare(queue=broadcaster_queue_name)
 
-    logger.info(f'Creating queues for id: {queue_id}')
+    logger.info(f'Creating queues for id: {queue_unique_id}')
 
     empty_since = None
-    queue_ttl = 5 * 60
+    queue_ttl = 1 * 60
     check_queue_rate = 2
     containers = []
 
     # Workers to create
     broadcast_container = UnpackHelpers.start_docker_container(
         container_name=UnpackHelpers.DOCKER_CONTAINER_NAMES['QUEUE_BROADCAST_WORKER'],
-        queue_name=broadcaster_queue_name,
+        queue_unique_id=queue_unique_id,
     )
     containers.append(broadcast_container)
 
     for i in range(10):
         fetcher_container = UnpackHelpers.start_docker_container(
             container_name=UnpackHelpers.DOCKER_CONTAINER_NAMES['QUEUE_FETCHER_WORKER'],
-            queue_name=fetcher_queue_name,
+            queue_unique_id=queue_unique_id,
         )
         containers.append(fetcher_container)
 

@@ -36,7 +36,11 @@ def unpack():
         node_uuid = UnpackHelpers.fetch_node_uuid(node_url);
         rules = request.json.get('rules')
 
-        fetcher_queue_name = f'fetch-{node_uuid}'
+        queue_unique_id = UnpackHelpers.get_queue_unique_id(node_uuid=node_uuid)
+        fetcher_queue_name = UnpackHelpers.get_queue_name(
+            queue_type='fetch',
+            queue_unique_id=queue_unique_id
+        )
 
         connection = pika.BlockingConnection(pika.ConnectionParameters(os.environ['UNPACK_HOST']))
         channel = connection.channel()
@@ -55,7 +59,7 @@ def unpack():
 
         UnpackHelpers.start_docker_container(
             container_name=UnpackHelpers.DOCKER_CONTAINER_NAMES['QUEUE_MANAGER'],
-            queue_name=node_uuid,
+            queue_unique_id=queue_unique_id,
         )
 
         connection.close()

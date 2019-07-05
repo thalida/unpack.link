@@ -16,7 +16,7 @@ class ContentTypeBase:
     DEFAULT_RULES = {
         'force_from_web': False,
         'force_from_db': False,
-        'refresh_after': 10 * 60,  # 10 minutes (in seconds)
+        'refresh_after': 1 * 86400,  # 1 day
     }
 
     @classmethod

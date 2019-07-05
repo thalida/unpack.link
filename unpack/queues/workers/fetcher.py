@@ -7,6 +7,7 @@ logger = logging.getLogger(__name__)
 import pika
 from retry import retry
 
+from unpack.helpers import UnpackHelpers
 from unpack.queues.jobs.fetcher import Fetcher
 
 
@@ -24,7 +25,11 @@ def handle_message_callback(*args, **kwargs):
 
 
 @retry(pika.exceptions.AMQPConnectionError, delay=5, jitter=(1, 3))
-def main(queue_name):
+def main(queue_unique_id):
+    queue_name = UnpackHelpers.get_queue_name(
+        queue_type='fetch',
+        queue_unique_id=queue_unique_id
+    )
     connection_params = pika.ConnectionParameters(
         os.environ['UNPACK_HOST'],
         heartbeat=600,

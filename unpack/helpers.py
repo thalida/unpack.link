@@ -7,6 +7,7 @@ logger = logging.getLogger(__name__)
 import hashlib
 import json
 import uuid
+import time
 
 from redis import Redis
 import docker
@@ -64,6 +65,19 @@ class UnpackHelpers:
         return UnpackHelpers.hash_url(node_url)
 
     @staticmethod
+    def get_queue_unique_id(node_uuid):
+        ms_timestamp = int(round(time.time() * 1000))
+        return f'{node_uuid}:{ms_timestamp}'
+
+    @staticmethod
+    def get_queue_name(queue_type, queue_unique_id):
+        return f'{queue_type}:{str(queue_unique_id)}'
+
+    @staticmethod
+    def get_queue_unique_id_from_name(queue_name):
+        return queue_name.split(':', 1)[-1]
+
+    @staticmethod
     def get_node_event_keys(node_url_hash, node_url=None, node_uuid=None):
         if node_url_hash is None:
             if node_uuid is not None:
@@ -84,12 +98,12 @@ class UnpackHelpers:
             )
 
     @staticmethod
-    def start_docker_container(container_name, queue_name):
+    def start_docker_container(container_name, queue_unique_id):
         docker_client = docker.from_env()
         container_settings = UnpackHelpers.DOCKER_CONTAINER_SETTINGS[container_name]
         volumes = {}
         action = container_settings['controller_action']
-        command = f"{action} -q {queue_name}"
+        command = f"{action} -q {queue_unique_id}"
 
         if container_settings.get('can_create_containers', False):
             volumes.update({
@@ -291,10 +305,8 @@ class UnpackHelpers:
             raise AttributeError('fetch_node_uuid_by_url requires node_url')
 
         cache_key = f'{node_url}:node_uuid'
-        logger.debug(cache_key)
-
-        # if r.exists(cache_key):
-        #     return r.get(cache_key)
+        if r.exists(cache_key):
+            return r.get(cache_key).decode('utf-8')
 
         try:
             res = UnpackHelpers.execute_sql(
@@ -311,7 +323,8 @@ class UnpackHelpers:
                 res = UnpackHelpers.store_node(node_url)
 
             node_uuid = res.get('uuid')
-            # r.set(cache_key, node_uuid)
+            r.set(cache_key, node_uuid.encode('utf-8'))
+
             return node_uuid
         except Exception as e:
             UnpackHelpers.raise_error(
@@ -325,9 +338,8 @@ class UnpackHelpers:
             raise AttributeError('fetch_node_url_by_uuid requires node_uuid')
 
         cache_key = f'{node_uuid}:node_url'
-        logger.debug(cache_key)
-        # if r.exists(cache_key):
-        #     return r.get(cache_key)
+        if r.exists(cache_key):
+            return r.get(cache_key).decode('utf-8')
 
         try:
             res = UnpackHelpers.execute_sql(
@@ -339,8 +351,10 @@ class UnpackHelpers:
                 """,
                 (node_uuid,)
             )
+
             node_url = res.get('url')
-            # r.set(cache_key, node_url)
+            r.set(cache_key, node_url.encode('utf-8'))
+
             return node_url
         except Exception:
             UnpackHelpers.raise_error(
