@@ -11,6 +11,4 @@ COPY controller.py /controller.py
 RUN pip install pipenv
 RUN pipenv install --system --deploy
 
-RUN touch /tmp/unpack_controller_logs.log
-
 ENTRYPOINT ["python", "/controller.py"]

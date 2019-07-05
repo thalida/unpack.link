@@ -17,6 +17,7 @@ services:
     image: unpack_container
     depends_on:
       - rabbitmq
+      - redis
     command: 'api-server'
     ports:
       - 5001:5001

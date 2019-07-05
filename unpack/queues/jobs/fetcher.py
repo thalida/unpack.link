@@ -1,18 +1,20 @@
 import os
 os.environ['TZ'] = 'UTC'
 
-import json
 import logging
+logger = logging.getLogger(__name__)
+
+import json
 
 import pika
+from redis import Redis
 
 from ...helpers import UnpackHelpers
 from ...content_types.twitter import ContentTypeTwitter
 from ...content_types.media import ContentTypeMedia
 from ...content_types.base import ContentTypeBase
 
-logger = logging.getLogger(__name__)
-
+r = Redis(host=os.environ['UNPACK_HOST'])
 
 class Fetcher:
     NODE_TYPES = [
@@ -156,13 +158,9 @@ class Fetcher:
                 )
                 continue
 
-            is_found_in_tree = UnpackHelpers.check_target_node_in_tree(
-                start_node_uuid=self.origin_source_uuid,
-                target_node_uuid=target_node_uuid,
-                level=new_fetcher_state['level'],
-                min_count=2
-            )
-            if is_found_in_tree:
+            cache_key = f'{self.origin_source_uuid}:{target_node_uuid}'
+
+            if r.exists(cache_key):
                 new_fetcher_state['is_already_in_path'] = True
                 self.broadcast(
                     event_name=UnpackHelpers.EVENT_NAME['LINK_FETCH_SUCCESS'],
@@ -171,6 +169,8 @@ class Fetcher:
                     data=new_fetcher_state,
                 )
                 continue
+
+            r.set(cache_key, 'true', ex=10 * 60)
 
             self.publish_child({
                 'node_uuid': target_node_uuid,

@@ -17,13 +17,12 @@ kombu = "*"
 flask-cors = "*"
 docker = "*"
 pyrabbit = "*"
-snakeviz = "*"
-pyprof2calltree = "*"
-pycurl = "*"
 redis = "*"
 
 [dev-packages]
+snakeviz = "*"
 pylint = "*"
+pyprof2calltree = "*"
 autopep8 = "*"
 
 [requires]
