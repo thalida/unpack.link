@@ -1,14 +1,20 @@
-import hashlib
 import os
-import json
+os.environ['TZ'] = 'UTC'
+
 import logging
+logger = logging.getLogger(__name__)
+
+import hashlib
+import json
 import uuid
 
+from redis import Redis
 import docker
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-logger = logging.getLogger(__name__)
+r = Redis(host=os.environ['UNPACK_HOST'])
+
 
 ENV_VARS = {
     'DB': {
@@ -284,6 +290,12 @@ class UnpackHelpers:
         if node_url is None:
             raise AttributeError('fetch_node_uuid_by_url requires node_url')
 
+        cache_key = f'{node_url}:node_uuid'
+        logger.debug(cache_key)
+
+        # if r.exists(cache_key):
+        #     return r.get(cache_key)
+
         try:
             res = UnpackHelpers.execute_sql(
                 'fetchone',
@@ -298,7 +310,9 @@ class UnpackHelpers:
             if insert_on_new and res is None:
                 res = UnpackHelpers.store_node(node_url)
 
-            return res.get('uuid')
+            node_uuid = res.get('uuid')
+            # r.set(cache_key, node_uuid)
+            return node_uuid
         except Exception as e:
             UnpackHelpers.raise_error(
                 'Unpack: Error fetching node uuid for url: {node_url}',
@@ -310,6 +324,11 @@ class UnpackHelpers:
         if node_uuid is None:
             raise AttributeError('fetch_node_url_by_uuid requires node_uuid')
 
+        cache_key = f'{node_uuid}:node_url'
+        logger.debug(cache_key)
+        # if r.exists(cache_key):
+        #     return r.get(cache_key)
+
         try:
             res = UnpackHelpers.execute_sql(
                 'fetchone',
@@ -320,7 +339,9 @@ class UnpackHelpers:
                 """,
                 (node_uuid,)
             )
-            return res.get('url')
+            node_url = res.get('url')
+            # r.set(cache_key, node_url)
+            return node_url
         except Exception:
             UnpackHelpers.raise_error(
                 'Unpack: Error fetching node url for uuid: {node_uuid}',

@@ -35,7 +35,7 @@ class State {
     this.settings = {
       rules: {
         max_link_depth: 2,
-        // force_from_web: true,
+        force_from_db: true,
       },
     };
   }
