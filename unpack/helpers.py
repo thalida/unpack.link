@@ -80,23 +80,14 @@ class UnpackHelpers:
         return queue_name.split(':', 1)[-1]
 
     @staticmethod
-    def get_node_event_keys(node_url_hash, node_url=None, node_uuid=None):
-        if node_url_hash is None:
-            if node_uuid is not None:
-                node_url = UnpackHelpers.fetch_node_url(node_uuid)
-
-            if node_url is not None:
-                node_url_hash = UnpackHelpers.get_url_hash(node_url)
-
+    def get_queue_event_keys(queue_unique_id):
         try:
-            node_event_keys = {evt: f'{evt.lower()}:{node_url_hash}' for evt in UnpackHelpers.EVENT_NAME}
-            return node_event_keys
+            queue_event_keys = {evt: f'{evt.lower()}:{queue_unique_id}' for evt in UnpackHelpers.EVENT_NAME}
+            return queue_event_keys
         except Exception:
             UnpackHelpers.raise_error(
-                'Error getting node_event_keys',
-                node_url_hash=node_url_hash,
-                node_url=node_url,
-                node_uuid=node_uuid,
+                'Error getting queue_event_keys',
+                queue_unique_id=queue_unique_id,
             )
 
     @staticmethod

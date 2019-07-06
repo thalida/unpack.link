@@ -16,36 +16,23 @@ api_routes = Blueprint(
     static_folder='../'
 )
 
-@api_routes.route('/api/node_event_keys', methods=['GET'])
-def node_event_keys():
-    try:
-        node_url = request.args.get('url')
-        node_event_keys = UnpackHelpers.get_node_event_keys(
-            node_url_hash=None,
-            node_url=node_url,
-        )
-        return jsonify(node_event_keys)
-    except Exception:
-        logger.exception('Error GET node_event_keys')
-        abort(500)
-
-@api_routes.route('/api/start', methods=['POST'])
-def unpack():
+@api_routes.route('/api/queue/create', methods=['POST'])
+def queue_create():
     try:
         node_url = request.json.get('url')
-        node_uuid = UnpackHelpers.fetch_node_uuid(node_url);
         rules = request.json.get('rules')
 
+        node_uuid = UnpackHelpers.fetch_node_uuid(node_url)
         queue_unique_id = UnpackHelpers.get_queue_unique_id(node_uuid=node_uuid)
         fetcher_queue_name = UnpackHelpers.get_queue_name(
             queue_type='fetch',
             queue_unique_id=queue_unique_id
         )
+        event_keys = UnpackHelpers.get_queue_event_keys(queue_unique_id)
 
         connection = pika.BlockingConnection(pika.ConnectionParameters(os.environ['UNPACK_HOST']))
         channel = connection.channel()
         channel.queue_declare(queue=fetcher_queue_name)
-
         channel.basic_publish(
             exchange='',
             routing_key=fetcher_queue_name,
@@ -56,14 +43,25 @@ def unpack():
             properties=pika.BasicProperties(
                 delivery_mode=2,  # make message persistent
             ))
-
-        UnpackHelpers.start_docker_container(
-            container_name=UnpackHelpers.DOCKER_CONTAINER_NAMES['QUEUE_MANAGER'],
-            queue_unique_id=queue_unique_id,
-        )
-
         connection.close()
-        return jsonify({'success': True})
+
+        return jsonify({
+            'queue_unique_id': queue_unique_id,
+            'event_keys': event_keys,
+        })
+    except Exception:
+        logger.exception('Error GET node_event_keys')
+        abort(500)
+
+
+@api_routes.route('/api/queue/<string:queue_uid>/start', methods=['POST'])
+def queue_start(queue_uid):
+    try:
+        container = UnpackHelpers.start_docker_container(
+            container_name=UnpackHelpers.DOCKER_CONTAINER_NAMES['QUEUE_MANAGER'],
+            queue_unique_id=queue_uid,
+        )
+        return jsonify({'container': container.id})
     except Exception as e:
-        logger.exception(e)
-        return jsonify({'success': False})
+        logger.exception(f'Error starting queue: {queue_uid}')
+        abort(500)

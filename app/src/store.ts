@@ -10,7 +10,7 @@ class State {
   apiHost: string = (isDevelopment) ? `http://${window.location.hostname}:5001` : '';
   isLoading: boolean = true;
   requestedURL: string | null = null;
-  nodeEventKeys: any | null = null;
+  queue: any | null = null;
   nodes: any = {};
   links: any[] = [];
   numNodesQueued: number = 0;
@@ -37,8 +37,8 @@ export default new Vuex.Store({
     setRequestedUrl(state, url) {
       state.requestedURL = url;
     },
-    setNodeEventKeys(state, nodeEventKeys) {
-      state.nodeEventKeys = Object.assign({}, nodeEventKeys);
+    setQueue(state, queue) {
+      state.queue = Object.assign({}, queue);
     },
     addNode(state, node) {
       const node_uuid = node.node_uuid
@@ -57,33 +57,36 @@ export default new Vuex.Store({
       n = n || 1;
       state[stateVar] += n;
     },
-    resetNodes(state) {
+    setDefaultRequestStates(state) {
       state.nodes = [];
-    },
-    resetLinks(state) {
       state.links = [];
+      state.queue = null;
+      state.numNodesQueued = 0;
+      state.numNodesInProgress = 0;
+      state.numNodesFetched = 0;
+      state.numLinksFetched = 0;
     },
   },
   actions: {
-    resetState({ commit }) {
-      commit('resetNodes');
-      commit('resetLinks');
-    },
-    setupNewRequest({ commit, dispatch }, { url }) {
-      commit('setIsLoading', true);
-      commit('setRequestedUrl', url);
-      dispatch('getEventKeys').then(() => {
-        commit('setIsLoading', false);
+    resetRequestState({ commit }) {
+      return new Promise((resolve) => {
+        commit('setDefaultRequestStates');
+        resolve();
       });
     },
-    getEventKeys({ commit, state }) {
-      const path = `${state.apiHost}/api/node_event_keys`;
-      const params = { url: state.requestedURL };
-      return axios
-        .get(path, {params})
-        .then((response) => {
-          commit('setNodeEventKeys', response.data);
-        });
+    setupNewRequest({ commit }, { url }) {
+      return new Promise((resolve) => {
+        commit('setIsLoading', true);
+        commit('setDefaultRequestStates');
+        commit('setRequestedUrl', url);
+        resolve();
+      });
+    },
+    saveQueue({ commit }, { eventKeys, queueUniqueId }) {
+      return new Promise((resolve) => {
+        commit('setQueue', { eventKeys, queueUniqueId });
+        resolve('foobar');
+      });
     },
     addNode({ commit }, node) {
       commit('addNode', node);

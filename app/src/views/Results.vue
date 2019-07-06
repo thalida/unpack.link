@@ -35,12 +35,12 @@ const socket = io('0.0.0.0:5001');
 export default class Results extends Vue {
   @Prop() private url!: string;
 
-  created() {
-    this.$store.dispatch('setupNewRequest', { url: this.url });
-  }
-
   get apiHost() {
     return this.$store.state.apiHost;
+  }
+
+  get isLoading() {
+    return this.$store.state.isLoading;
   }
 
   get settings() {
@@ -55,12 +55,8 @@ export default class Results extends Vue {
     this.$store.commit('setRequestedURL', newUrl);
   }
 
-  get nodeEventKeys() {
-    return this.$store.state.nodeEventKeys;
-  }
-
-  get isLoading() {
-    return this.$store.state.isLoading;
+  get queue() {
+    return this.$store.state.queue;
   }
 
   get nodes() {
@@ -87,27 +83,46 @@ export default class Results extends Vue {
     return this.$store.state.numLinksFetched;
   }
 
-  @Watch('nodeEventKeys', {immediate: true})
-  onNodeEventKeysChanged(newValue: any) {
-    if (typeof newValue === 'undefined' || newValue === null) {
-      return;
-    }
-    this.startListening();
-    this.startUnpacking();
+  created() {
+    this.$store
+      .dispatch('setupNewRequest', { url: this.url })
+      .then(() => {
+        this.createQueue();
+      });
+  }
+
+  createQueue() {
+      const path = `${this.apiHost}/api/queue/create`;
+      const params = {
+        url: this.requestedURL,
+        rules: this.settings.rules,
+      };
+      return axios
+        .post(path, params)
+        .then((response) => {
+          return this.$store.dispatch('saveQueue', {
+            'eventKeys': response.data.event_keys,
+            'queueUniqueId': response.data.queue_unique_id,
+          });
+        })
+        .then(() => {
+          this.startListening();
+          this.startQueue();
+        });
   }
 
   startListening() {
-    socket.on(this.nodeEventKeys!['FETCH:NODE:QUEUED'], (res: any) => {
+    socket.on(this.queue.eventKeys!['FETCH:NODE:QUEUED'], (res: any) => {
       this.$store.dispatch('addOneTo', 'numNodesQueued');
       console.log('FETCH:NODE:QUEUED', res);
     });
 
-    socket.on(this.nodeEventKeys!['FETCH:NODE:IN_PROGRESS'], (res: any) => {
+    socket.on(this.queue.eventKeys!['FETCH:NODE:IN_PROGRESS'], (res: any) => {
       this.$store.dispatch('addOneTo', 'numNodesInProgress');
       console.log('FETCH:NODE:IN_PROGRESS', res);
     });
 
-    socket.on(this.nodeEventKeys!['FETCH:NODE:COMPLETED'], (res: any) => {
+    socket.on(this.queue.eventKeys!['FETCH:NODE:COMPLETED'], (res: any) => {
       let node: any;
 
       if (typeof res === 'object') {
@@ -120,7 +135,7 @@ export default class Results extends Vue {
       console.log('FETCH:NODE:COMPLETED', res);
     });
 
-    socket.on(this.nodeEventKeys!['STORE:LINK:COMPLETED'], (res: any) => {
+    socket.on(this.queue.eventKeys!['STORE:LINK:COMPLETED'], (res: any) => {
       let link: any;
 
       if (typeof res === 'object') {
@@ -134,13 +149,10 @@ export default class Results extends Vue {
     });
   }
 
-  startUnpacking() {
-    const path = `${this.apiHost}/api/start`;
-    const params = {
-      url: this.requestedURL,
-      rules: this.settings.rules,
-    };
-    return axios.post(path, params);
+  startQueue() {
+    const queueUniqueId = this.queue.queueUniqueId;
+    const path = `${this.apiHost}/api/queue/${queueUniqueId}/start`;
+    return axios.post(path);
   }
 
   formatLink(rawLink: any) {

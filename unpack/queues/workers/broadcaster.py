@@ -14,17 +14,13 @@ socketio = SocketIO(message_queue=f'amqp://{os.environ["UNPACK_HOST"]}:5672')
 
 class Broadcaster:
     def __init__(self, ch, method, properties, body):
-        self.channel = ch
+        queue_unique_id = UnpackHelpers.get_queue_unique_id_from_name(method.routing_key)
+        queue_event_keys = UnpackHelpers.get_queue_event_keys(queue_unique_id)
 
         body = json.loads(body)
         event_name = body['event_name']
 
-        node_event_keys = UnpackHelpers.get_node_event_keys(
-            node_url_hash=None,
-            node_url=body['origin_source_node_url'],
-        )
-
         socketio.emit(
-            node_event_keys[event_name],
+            queue_event_keys[event_name],
             json.dumps(body['data'], default=str)
         )
