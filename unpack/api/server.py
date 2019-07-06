@@ -28,7 +28,7 @@ socketio.init_app(app, message_queue=f'amqp://{os.environ["UNPACK_HOST"]}:5672')
 
 def main():
     is_debug = os.environ['UNPACK_DEV_ENV'] == 'TRUE'
-    socketio.run(app, debug=is_debug, host='0.0.0.0', port='5001')
+    socketio.run(app, debug=is_debug, host='0.0.0.0', port='5000')
 
 if __name__ == '__main__':
     main()

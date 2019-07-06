@@ -26,7 +26,7 @@ import axios from 'axios';
 import io from 'socket.io-client';
 import Level from '@/components/Level.vue';
 
-const socket = io('0.0.0.0:5001');
+const socket = io('0.0.0.0:5000');
 
 
 @Component({

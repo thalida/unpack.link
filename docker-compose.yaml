@@ -12,6 +12,12 @@ services:
       - 15672:15672
       - 5672:5672
 
+  frontend_app:
+    build: ./app
+    image: frontend_app
+    ports:
+      - 8080:80
+
   api_server:
     build: .
     image: unpack_container
@@ -20,7 +26,7 @@ services:
       - redis
     command: 'api-server'
     ports:
-      - 5001:5001
+      - 5000:5000
     environment:
       - UNPACK_HOST
       - UNPACK_DEV_ENV

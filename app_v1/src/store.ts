@@ -7,7 +7,7 @@ Vue.use(Vuex);
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
 class State {
-  apiHost: string = (isDevelopment) ? `http://${window.location.hostname}:5001` : '';
+  apiHost: string = (isDevelopment) ? `http://${window.location.hostname}:5000` : '';
   isLoading: boolean = true;
   requestedURL: string | null = null;
   queue: any | null = null;
