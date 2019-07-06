@@ -4,11 +4,10 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
-
-@Component
-export default class FourOhFour extends Vue {}
+<script>
+export default {
+  name: 'FourOhFour',
+}
 </script>
 
 <style lang="scss">

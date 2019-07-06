@@ -1,5 +1,18 @@
 <template>
   <div class="about">
-    <h1>This is an about page</h1>
+    <router-link to="/">Home</router-link>
+    About
   </div>
 </template>
+
+<script>
+export default {
+  name: 'about',
+}
+</script>
+
+<style lang="scss">
+.about {
+    background: purple;
+}
+</style>

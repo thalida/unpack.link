@@ -50,7 +50,7 @@ def queue_create():
             'event_keys': event_keys,
         })
     except Exception:
-        logger.exception('Error GET node_event_keys')
+        logger.exception('Error GET queue_create')
         abort(500)
 
 
