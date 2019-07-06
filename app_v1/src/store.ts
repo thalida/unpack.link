@@ -41,9 +41,9 @@ export default new Vuex.Store({
       state.queue = Object.assign({}, queue);
     },
     addNode(state, node) {
-      const node_uuid = node.node_uuid
+      const node_uuid = node.node_uuid;
       if (node_uuid in state.nodes) {
-        return
+        return;
       }
 
       Vue.set(state.nodes, node.node_uuid, node);

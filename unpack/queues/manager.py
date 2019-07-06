@@ -21,7 +21,7 @@ def quote(string):
 def get_queue_message_count(queue_name):
     req_url = f'{rabbitmq_api_url}/queues/{quote(rabbitmq_vhost)}/{quote(queue_name)}'
     json_res = requests.get(req_url, auth=rabbitmq_auth).json()
-    return json_res['messages']
+    return json_res.get('messages', 0)
 
 
 def main(queue_unique_id):

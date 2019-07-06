@@ -1,12 +1,12 @@
 <template>
 	<div class="results" :if="!isLoading">
-		<form id="input-form" @submit.prevent>
+		<form id="input-form" @submit.prevent="onFormSubmit">
 			<input
-				v-model="requestedURL"
+				v-model="inputRequestUrl"
 				type="url"
 				placeholder="http://"
 				required />
-			<button type="submit" @click="onFormSubmit">unpack</button>
+			<button type="submit">unpack</button>
 		</form>
     <p>node_stats: {{numNodesQueued}} : {{numNodesInProgress}} : {{numNodesFetched}}</p>
     <p>link_stats: {{numLinksFetched}}</p>
@@ -34,6 +34,7 @@ const socket = io('0.0.0.0:5001');
 })
 export default class Results extends Vue {
   @Prop() private url!: string;
+  inputRequestUrl: string | null = null;
 
   get apiHost() {
     return this.$store.state.apiHost;
@@ -49,10 +50,6 @@ export default class Results extends Vue {
 
   get requestedURL() {
     return this.$store.state.requestedURL;
-  }
-
-  set requestedURL(newUrl) {
-    this.$store.commit('setRequestedURL', newUrl);
   }
 
   get queue() {
@@ -83,10 +80,21 @@ export default class Results extends Vue {
     return this.$store.state.numLinksFetched;
   }
 
+  // @Watch('$route', { immediate: true, deep: true })
+  // onUrlChange(newVal: any) {
+  //   this.stopQueue();
+  //   this.$store.dispatch('resetRequestState');
+  // }
+
+  beforeRouteLeave(to, from, next) {
+    debugger;
+  }
+
   created() {
     this.$store
       .dispatch('setupNewRequest', { url: this.url })
       .then(() => {
+        this.inputRequestUrl = this.requestedURL;
         this.createQueue();
       });
   }
@@ -101,8 +109,8 @@ export default class Results extends Vue {
         .post(path, params)
         .then((response) => {
           return this.$store.dispatch('saveQueue', {
-            'eventKeys': response.data.event_keys,
-            'queueUniqueId': response.data.queue_unique_id,
+            eventKeys: response.data.event_keys,
+            queueUniqueId: response.data.queue_unique_id,
           });
         })
         .then(() => {
@@ -155,27 +163,17 @@ export default class Results extends Vue {
     return axios.post(path);
   }
 
-  formatLink(rawLink: any) {
-    let link = null;
-
-    if (typeof rawLink === 'object') {
-      link = JSON.parse(JSON.stringify(rawLink));
-    } else {
-      link = JSON.parse(rawLink);
-    }
-
-    link.hasSource = typeof link.source !== 'undefined' && link.source !== null;
-    link.hasTarget = typeof link.target !== 'undefined' && link.target !== null;
-
-    return link;
+  stopQueue() {
+    const queueUniqueId = this.queue.queueUniqueId;
+    const path = `${this.apiHost}/api/queue/${queueUniqueId}/stop`;
+    return axios.post(path);
   }
 
   onFormSubmit() {
-    this.$store.dispatch('resetState');
     this.$router.push({
       name: 'results',
       params: {
-        url: this.requestedURL as string,
+        url: this.inputRequestUrl as string,
       },
     });
   }
