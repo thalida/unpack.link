@@ -10,13 +10,17 @@
 		</form>
     <p>node_stats: {{numNodesQueued}} : {{numNodesInProgress}} : {{numNodesFetched}}</p>
     <p>link_stats: {{numLinksFetched}}</p>
-    <div class="tree">
+    <br /><br /><br /><br />
+    {{links}}
+    <br /><br /><br /><br />
+    {{nodes}}
+    <!-- <div class="tree">
       <Level
         v-for="(links, level) in linksByLevel"
         :key="level"
         :links="links"
       />
-    </div>
+    </div> -->
 	</div>
 </template>
 
@@ -63,8 +67,12 @@ export default class Results extends Vue {
     return this.$store.state.isLoading;
   }
 
-  get linksByLevel() {
-    return this.$store.state.linksByLevel;
+  get nodes() {
+    return this.$store.state.nodes;
+  }
+
+  get links() {
+    return this.$store.state.links;
   }
 
   get numNodesQueued() {
@@ -97,19 +105,36 @@ export default class Results extends Vue {
       this.$store.dispatch('addOneTo', 'numNodesQueued');
       console.log('FETCH:NODE:QUEUED', res);
     });
+
     socket.on(this.nodeEventKeys!['FETCH:NODE:IN_PROGRESS'], (res: any) => {
       this.$store.dispatch('addOneTo', 'numNodesInProgress');
       console.log('FETCH:NODE:IN_PROGRESS', res);
     });
+
     socket.on(this.nodeEventKeys!['FETCH:NODE:COMPLETED'], (res: any) => {
-      this.$store.dispatch('addOneTo', 'numNodesFetched');
+      let node: any;
+
+      if (typeof res === 'object') {
+        node = JSON.parse(JSON.stringify(res));
+      } else {
+        node = JSON.parse(res);
+      }
+
+      this.$store.dispatch('addNode', node);
       console.log('FETCH:NODE:COMPLETED', res);
-      // this.$store.dispatch('insertLink', this.formatLink(rawLink));
     });
+
     socket.on(this.nodeEventKeys!['STORE:LINK:COMPLETED'], (res: any) => {
-      this.$store.dispatch('addOneTo', 'numLinksFetched');
+      let link: any;
+
+      if (typeof res === 'object') {
+        link = JSON.parse(JSON.stringify(res));
+      } else {
+        link = JSON.parse(res);
+      }
+
+      this.$store.dispatch('addLink', link);
       console.log('STORE:LINK:COMPLETED', res);
-      // this.$store.dispatch('insertLink', this.formatLink(rawLink));
     });
   }
 

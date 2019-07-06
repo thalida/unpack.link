@@ -21,10 +21,10 @@ class Broadcaster:
 
         node_event_keys = UnpackHelpers.get_node_event_keys(
             node_url_hash=None,
-            node_url=body['origin_source_url'],
+            node_url=body['origin_source_node_url'],
         )
 
         socketio.emit(
             node_event_keys[event_name],
-            json.dumps(body, default=str)
+            json.dumps(body['data'], default=str)
         )

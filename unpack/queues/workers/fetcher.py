@@ -27,7 +27,6 @@ class Fetcher:
 
     DEFAULT_STATE = {
         'level': 0,
-        'is_already_in_path': False,
     }
 
     DEFAULT_RULES = {
@@ -61,13 +60,14 @@ class Fetcher:
         self.node_url_hash = UnpackHelpers.get_url_hash(body['node_url'])
 
         self.source_node_uuid = body.get('source_node_uuid')
-        self.origin_source_url = body.get('origin_source_url', self.node_url)
-        self.origin_source_uuid = UnpackHelpers.fetch_node_uuid(self.origin_source_url)
+        self.origin_source_node_url = body.get('origin_source_node_url', self.node_url)
+        self.origin_source_uuid = UnpackHelpers.fetch_node_uuid(self.origin_source_node_url)
         self.is_origin_node = self.source_node_uuid is None
 
         self.publish_broadcast(
             event_name=UnpackHelpers.EVENT_NAME['FETCH:NODE:IN_PROGRESS'],
             node_uuid=self.node_uuid,
+            node_url=self.node_url,
         )
 
         self.walk_node_tree()
@@ -98,6 +98,7 @@ class Fetcher:
         self.publish_broadcast(
             event_name=UnpackHelpers.EVENT_NAME['FETCH:NODE:COMPLETED'],
             node_uuid=self.node_uuid,
+            node_url=self.node_url,
             node_metadata=node_metadata,
         )
 
@@ -124,29 +125,35 @@ class Fetcher:
             if has_reached_max_depth and link_type in ['media', 'link']:
                 continue
 
-            source_url = self.node_url
+            source_node_url = self.node_url
             source_node_uuid = self.node_uuid
-            target_url = raw_link.get('target_node_url')
+            target_node_url = raw_link.get('target_node_url')
             target_node_uuid = raw_link.get('target_node_uuid')
 
-            if not target_node_uuid:
-                target_node_uuid = UnpackHelpers.fetch_node_uuid(target_url)
+            if not target_node_uuid and target_node_url:
+                target_node_uuid = UnpackHelpers.fetch_node_uuid(target_node_url)
+
+            if not target_node_url and target_node_uuid:
+                target_node_url = UnpackHelpers.fetch_node_url(target_node_uuid)
+
+            if not target_node_uuid or not target_node_url:
+                continue
 
             self.store_link(
-                source_url=source_url,
+                source_node_url=source_node_url,
                 source_node_uuid=source_node_uuid,
-                target_url=target_url,
+                target_node_url=target_node_url,
                 target_node_uuid=target_node_uuid,
                 raw_link=raw_link,
             )
 
             self.queue_next_node(
-                source_url=source_url,
+                source_node_url=source_node_url,
                 source_node_uuid=source_node_uuid,
-                target_url=target_url,
+                target_node_url=target_node_url,
                 target_node_uuid=target_node_uuid
             )
-    def store_link(self, source_url, source_node_uuid, target_url, target_node_uuid, raw_link):
+    def store_link(self, source_node_url, source_node_uuid, target_node_url, target_node_uuid, raw_link):
         UnpackHelpers.store_link(
             source_node_uuid,
             target_node_uuid=target_node_uuid,
@@ -156,43 +163,42 @@ class Fetcher:
 
         self.publish_broadcast(
             event_name=UnpackHelpers.EVENT_NAME['STORE:LINK:COMPLETED'],
-            source_url=source_url,
+            source_node_url=source_node_url,
             source_node_uuid=source_node_uuid,
-            target_url=target_url,
+            target_node_url=target_node_url,
             target_node_uuid=target_node_uuid,
             link_type=raw_link.get('link_type'),
             weight=raw_link.get('weight'),
         )
 
-    def queue_next_node(self, source_url, source_node_uuid, target_url, target_node_uuid):
-        new_fetcher_state = self.state.copy()
-        new_fetcher_state['level'] += 1
-
-        if target_url == source_url:
-            new_fetcher_state['is_already_in_path'] = True
+    def queue_next_node(self, source_node_url, source_node_uuid, target_node_url, target_node_uuid):
+        if target_node_url == source_node_url:
             return
 
         cache_key = f'{self.queue_unique_id}:{target_node_uuid}'
 
         if r.exists(cache_key):
-            new_fetcher_state['is_already_in_path'] = True
             return
 
-        r.set(cache_key, 'true', ex=10 * 60)
+        new_fetcher_state = self.state.copy()
+        new_fetcher_state['level'] += 1
 
         self.publish_broadcast(
             event_name=UnpackHelpers.EVENT_NAME['FETCH:NODE:QUEUED'],
             node_uuid=target_node_uuid,
+            node_url=target_node_url,
         )
 
         self.publish_child({
             'node_uuid': target_node_uuid,
-            'node_url': target_url,
+            'node_url': target_node_url,
             'source_node_uuid': source_node_uuid,
-            'origin_source_url': self.origin_source_url,
+            'origin_source_node_url': self.origin_source_node_url,
             'state': new_fetcher_state,
             'rules': self.rules,
         })
+
+        r.set(cache_key, 'true', ex=10 * 60)
 
     def publish_broadcast(self, event_name, **kwargs):
         queue_name = UnpackHelpers.get_queue_name('broadcast', self.queue_unique_id)
@@ -201,7 +207,7 @@ class Fetcher:
             routing_key=queue_name,
             body=json.dumps({
                 'event_name': event_name,
-                'origin_source_url': self.origin_source_url,
+                'origin_source_node_url': self.origin_source_node_url,
                 'data': kwargs,
             }, default=str),
             properties=pika.BasicProperties(

@@ -11,11 +11,8 @@ class State {
   isLoading: boolean = true;
   requestedURL: string | null = null;
   nodeEventKeys: any | null = null;
-  nodes: any[] = [];
+  nodes: any = {};
   links: any[] = [];
-  linksByLevel: any[] = [];
-  targetSources: any[] = [];
-  requiredNodes: any[] = [];
   numNodesQueued: number = 0;
   numNodesInProgress: number = 0;
   numNodesFetched: number = 0;
@@ -43,42 +40,18 @@ export default new Vuex.Store({
     setNodeEventKeys(state, nodeEventKeys) {
       state.nodeEventKeys = Object.assign({}, nodeEventKeys);
     },
-    addLink(state, link) {
-      Vue.set(state.links, state.links.length, link);
-    },
     addNode(state, node) {
-      if (node === null) {
-        return;
+      const node_uuid = node.node_uuid
+      if (node_uuid in state.nodes) {
+        return
       }
 
       Vue.set(state.nodes, node.node_uuid, node);
+      state.numNodesFetched += 1;
     },
-    addLinkToLevel(state, {level, link}) {
-      if (typeof state.linksByLevel[level] === 'undefined') {
-        state.linksByLevel[level] = [];
-      }
-
-      // const foundLink
-      // if (state.linksByLevel[level].includes(link)) {
-      //   return;
-      // }
-
-      state.linksByLevel[level].push(link);
-      Vue.set(state.linksByLevel, level, state.linksByLevel[level]);
-    },
-    addTargetSource(state, {targetUUID, sourceUUID}) {
-      if (typeof state.targetSources[targetUUID] === 'undefined') {
-        state.targetSources[targetUUID] = [];
-      }
-
-      if (state.targetSources[targetUUID].includes(sourceUUID)) {
-        return;
-      }
-
-      if (sourceUUID) {
-        state.targetSources[targetUUID].push(sourceUUID);
-        Vue.set(state.targetSources, targetUUID, state.targetSources[targetUUID]);
-      }
+    addLink(state, link) {
+      Vue.set(state.links, state.links.length, link);
+      state.numLinksFetched += 1;
     },
     add(state, {stateVar, n}) {
       n = n || 1;
@@ -90,23 +63,11 @@ export default new Vuex.Store({
     resetLinks(state) {
       state.links = [];
     },
-    resetLinksByLevel(state) {
-      state.linksByLevel = [];
-    },
-    resetTargetSources(state) {
-      state.targetSources = [];
-    },
-    resetRequiredNodes(state) {
-      state.requiredNodes = [];
-    },
   },
   actions: {
     resetState({ commit }) {
       commit('resetNodes');
       commit('resetLinks');
-      commit('resetLinksByLevel');
-      commit('resetTargetSources');
-      commit('resetRequiredNodes');
     },
     setupNewRequest({ commit, dispatch }, { url }) {
       commit('setIsLoading', true);
@@ -124,16 +85,11 @@ export default new Vuex.Store({
           commit('setNodeEventKeys', response.data);
         });
     },
-    insertLink({ commit }, link) {
-      const sourceUUID: string = (link.source) ? link.source.node_uuid : null;
-      const targetUUID: string = link.target.node_uuid;
-      const level: number = link.data.level;
-
-      commit('addNode', link.source);
-      commit('addNode', link.target);
+    addNode({ commit }, node) {
+      commit('addNode', node);
+    },
+    addLink({ commit }, link) {
       commit('addLink', link);
-      commit('addLinkToLevel', { level, link });
-      commit('addTargetSource', {targetUUID, sourceUUID});
     },
     addOneTo({ commit }, stateVar) {
       commit('add', {stateVar, n: 1});
