@@ -7,43 +7,32 @@ Vue.use(Vuex);
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
 class State {
-  apiHost: string;
-  isLoading: boolean;
-  requestedURL: string | null;
-  nodeEventKeys: any | null;
-  nodes: any[];
-  links: any[];
-  linksByLevel: any[];
-  targetSources: any[];
-  requiredNodes: any[];
-  numLinks: number;
-  numFetchedLinks: number;
-  settings: any;
-
-  constructor() {
-    this.apiHost = (isDevelopment) ? `http://${window.location.hostname}:5001` : '';
-    this.isLoading = true;
-    this.requestedURL = null;
-    this.nodeEventKeys = null;
-    this.nodes = [];
-    this.links = [];
-    this.linksByLevel = [];
-    this.targetSources = [];
-    this.requiredNodes = [];
-    this.numLinks = 0;
-    this.numFetchedLinks = 0;
-    this.settings = {
-      rules: {
-        max_link_depth: 2,
-        // force_from_db: false,
-      },
-    };
-  }
+  apiHost: string = (isDevelopment) ? `http://${window.location.hostname}:5001` : '';
+  isLoading: boolean = true;
+  requestedURL: string | null = null;
+  nodeEventKeys: any | null = null;
+  nodes: any[] = [];
+  links: any[] = [];
+  linksByLevel: any[] = [];
+  targetSources: any[] = [];
+  requiredNodes: any[] = [];
+  numNodesQueued: number = 0;
+  numNodesInProgress: number = 0;
+  numNodesFetched: number = 0;
+  numLinksFetched: number = 0;
+  settings: any = {
+    rules: {
+      max_link_depth: 2,
+      // force_from_db: false,
+    },
+  };
 }
+
+const initState: any = new State();
 
 export default new Vuex.Store({
   strict: isDevelopment,
-  state: new State(),
+  state: initState,
   mutations: {
     setIsLoading(state, status) {
       state.isLoading = status;
@@ -91,13 +80,9 @@ export default new Vuex.Store({
         Vue.set(state.targetSources, targetUUID, state.targetSources[targetUUID]);
       }
     },
-    addNToNumLinks(state, n) {
+    add(state, {stateVar, n}) {
       n = n || 1;
-      state.numLinks += n;
-    },
-    addNToNumFetchedLinks(state, n) {
-      n = n || 1;
-      state.numFetchedLinks += n;
+      state[stateVar] += n;
     },
     resetNodes(state) {
       state.nodes = [];
@@ -150,11 +135,8 @@ export default new Vuex.Store({
       commit('addLinkToLevel', { level, link });
       commit('addTargetSource', {targetUUID, sourceUUID});
     },
-    incrementNumLinks({ commit }) {
-      commit('addNToNumLinks', 1);
-    },
-    incrementNumFetchedLinks({ commit }) {
-      commit('addNToNumFetchedLinks', 1);
+    addOneTo({ commit }, stateVar) {
+      commit('add', {stateVar, n: 1});
     },
   },
 });

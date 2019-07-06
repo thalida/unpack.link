@@ -65,12 +65,12 @@ def main():
         unpack.queues.manager.main(queue_unique_id=args.queue)
 
     elif args.action == 'queue-fetcher-worker':
-        import unpack.queues.workers.fetcher
-        unpack.queues.workers.fetcher.main(queue_unique_id=args.queue)
+        import unpack.queues.consumers.fetcher
+        unpack.queues.consumers.fetcher.main(queue_unique_id=args.queue)
 
     elif args.action == 'queue-broadcast-worker':
-        import unpack.queues.workers.broadcaster
-        unpack.queues.workers.broadcaster.main(queue_unique_id=args.queue)
+        import unpack.queues.consumers.broadcaster
+        unpack.queues.consumers.broadcaster.main(queue_unique_id=args.queue)
 
 if __name__ == '__main__':
     main()

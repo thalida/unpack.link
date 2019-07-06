@@ -8,7 +8,8 @@
 				required />
 			<button type="submit" @click="onFormSubmit">unpack</button>
 		</form>
-    {{numFetchedLinks}} / {{numLinks}}
+    <p>node_stats: {{numNodesQueued}} : {{numNodesInProgress}} : {{numNodesFetched}}</p>
+    <p>link_stats: {{numLinksFetched}}</p>
     <div class="tree">
       <Level
         v-for="(links, level) in linksByLevel"
@@ -66,12 +67,20 @@ export default class Results extends Vue {
     return this.$store.state.linksByLevel;
   }
 
-  get numLinks() {
-    return this.$store.state.numLinks;
+  get numNodesQueued() {
+    return this.$store.state.numNodesQueued;
   }
 
-  get numFetchedLinks() {
-    return this.$store.state.numFetchedLinks;
+  get numNodesInProgress() {
+    return this.$store.state.numNodesInProgress;
+  }
+
+  get numNodesFetched() {
+    return this.$store.state.numNodesFetched;
+  }
+
+  get numLinksFetched() {
+    return this.$store.state.numLinksFetched;
   }
 
   @Watch('nodeEventKeys', {immediate: true})
@@ -84,12 +93,23 @@ export default class Results extends Vue {
   }
 
   startListening() {
-    socket.on(this.nodeEventKeys!.LINK_FETCH_START, (rawLink: any) => {
-      this.$store.dispatch('incrementNumLinks');
+    socket.on(this.nodeEventKeys!['FETCH:NODE:QUEUED'], (res: any) => {
+      this.$store.dispatch('addOneTo', 'numNodesQueued');
+      console.log('FETCH:NODE:QUEUED', res);
     });
-    socket.on(this.nodeEventKeys!.LINK_FETCH_SUCCESS, (rawLink: any) => {
-      this.$store.dispatch('incrementNumFetchedLinks');
-      this.$store.dispatch('insertLink', this.formatLink(rawLink));
+    socket.on(this.nodeEventKeys!['FETCH:NODE:IN_PROGRESS'], (res: any) => {
+      this.$store.dispatch('addOneTo', 'numNodesInProgress');
+      console.log('FETCH:NODE:IN_PROGRESS', res);
+    });
+    socket.on(this.nodeEventKeys!['FETCH:NODE:COMPLETED'], (res: any) => {
+      this.$store.dispatch('addOneTo', 'numNodesFetched');
+      console.log('FETCH:NODE:COMPLETED', res);
+      // this.$store.dispatch('insertLink', this.formatLink(rawLink));
+    });
+    socket.on(this.nodeEventKeys!['STORE:LINK:COMPLETED'], (res: any) => {
+      this.$store.dispatch('addOneTo', 'numLinksFetched');
+      console.log('STORE:LINK:COMPLETED', res);
+      // this.$store.dispatch('insertLink', this.formatLink(rawLink));
     });
   }
 

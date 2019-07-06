@@ -1,54 +1,30 @@
 import os
 os.environ['TZ'] = 'UTC'
 
+import json
 import logging
+
+from flask_socketio import SocketIO, emit
+
+from ...helpers import UnpackHelpers
+
 logger = logging.getLogger(__name__)
-
-import pika
-from retry import retry
-
-from unpack.helpers import UnpackHelpers
-from unpack.queues.jobs.broadcaster import Broadcaster
+socketio = SocketIO(message_queue=f'amqp://{os.environ["UNPACK_HOST"]}:5672')
 
 
-def handle_message_callback(*args, **kwargs):
-    if os.environ['UNPACK_DEV_PROFILER'] == 'TRUE':
-        import cProfile
-        profiler = cProfile.Profile()
-        profiler.enable()
+class Broadcaster:
+    def __init__(self, ch, method, properties, body):
+        self.channel = ch
 
-    Broadcaster(*args, **kwargs)
+        body = json.loads(body)
+        event_name = body['event_name']
 
-    if os.environ['UNPACK_DEV_PROFILER'] == 'TRUE':
-        profiler.disable()
-        profiler.dump_stats(f'/tmp/unpack_profiler_results.txt')
+        node_event_keys = UnpackHelpers.get_node_event_keys(
+            node_url_hash=None,
+            node_url=body['origin_source_url'],
+        )
 
-
-@retry(pika.exceptions.AMQPConnectionError, delay=5, jitter=(1, 3))
-def main(queue_unique_id):
-    queue_name = UnpackHelpers.get_queue_name(
-        queue_type='broadcast',
-        queue_unique_id=queue_unique_id
-    )
-    connection_params = pika.ConnectionParameters(
-        os.environ['UNPACK_HOST'],
-        heartbeat=600,
-        blocked_connection_timeout=300
-    )
-    connection = pika.BlockingConnection(connection_params)
-    channel = connection.channel()
-
-    channel.basic_consume(
-        queue=queue_name,
-        on_message_callback=handle_message_callback,
-        auto_ack=True
-    )
-
-    try:
-        logger.info(' [*] Waiting for Broadcaster messages. To exit press CTRL+C or delete the queue')
-        channel.start_consuming()
-    except KeyboardInterrupt:
-        channel.stop_consuming()
-        connection.close()
-    except pika.exceptions.ConnectionClosedByBroker:
-        pass
+        socketio.emit(
+            node_event_keys[event_name],
+            json.dumps(body, default=str)
+        )
