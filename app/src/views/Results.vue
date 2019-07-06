@@ -62,7 +62,7 @@ export default {
 
     breakdown () {
       this.stopQueue()
-      this.$store.dispatch('resetResults')
+      this.$store.dispatch('resetResultsData')
     },
 
     createQueue () {

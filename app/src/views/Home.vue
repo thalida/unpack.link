@@ -1,6 +1,5 @@
 <template>
   <div class="home">
-    <router-link to="/about">About</router-link>
     <RequestForm :url="url" />
   </div>
 </template>
