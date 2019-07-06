@@ -9,8 +9,8 @@ from parsel import Selector
 from ...helpers import UnpackHelpers
 
 
-class ContentTypeBase:
-    TYPE = 'base'
+class ContentTypeWebsite:
+    TYPE = 'website'
     URL_PATTERN = re.compile(r'.*', re.IGNORECASE)
 
     DEFAULT_RULES = {

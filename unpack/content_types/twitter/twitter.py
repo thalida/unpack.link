@@ -3,11 +3,11 @@ import re
 from twython import Twython
 import twython.exceptions
 
-from ..base import ContentTypeBase
+from ..website import ContentTypeWebsite
 from . import secrets
 
 
-class ContentTypeTwitter(ContentTypeBase):
+class ContentTypeTwitter(ContentTypeWebsite):
     TYPE = 'twitter'
     # TODO FIND ALL THE TWITTER PATTERNS
     URL_PATTERN = re.compile(r'twitter\.com(?:.*?)status/(\d+)', re.IGNORECASE)

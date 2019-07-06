@@ -1,8 +1,8 @@
 import re
-from ..base import ContentTypeBase
+from ..website import ContentTypeWebsite
 
 
-class ContentTypeMedia(ContentTypeBase):
+class ContentTypeMedia(ContentTypeWebsite):
     TYPE = 'media'
     # figure out how to get the headers then...
     # look at the headers of the url to figure out if it's an image

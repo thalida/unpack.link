@@ -1,3 +1,3 @@
-from .base import ContentTypeBase
+from .website import ContentTypeWebsite
 from .media import ContentTypeMedia
 from .twitter import ContentTypeTwitter
