@@ -17,11 +17,11 @@ from ...content_types.website import ContentTypeWebsite
 r = Redis(host=os.environ['UNPACK_HOST'])
 
 class Fetcher:
+    # ORDER MATTERS - V.IMPORTANT
+    # Regex checks for the first matching contenttype url_pattern
     NODE_TYPES = [
         ContentTypeTwitter(),
         ContentTypeMedia(),
-
-        # TypeBase should always be last
         ContentTypeWebsite(),
     ]
 
@@ -153,6 +153,7 @@ class Fetcher:
                 target_node_url=target_node_url,
                 target_node_uuid=target_node_uuid
             )
+
     def store_link(self, source_node_url, source_node_uuid, target_node_url, target_node_uuid, raw_link):
         UnpackHelpers.store_link(
             source_node_uuid,
@@ -183,12 +184,6 @@ class Fetcher:
         new_fetcher_state = self.state.copy()
         new_fetcher_state['level'] += 1
 
-        self.publish_broadcast(
-            event_name=UnpackHelpers.EVENT_NAME['FETCH:NODE:QUEUED'],
-            node_uuid=target_node_uuid,
-            node_url=target_node_url,
-        )
-
         self.publish_child({
             'node_uuid': target_node_uuid,
             'node_url': target_node_url,
@@ -197,6 +192,12 @@ class Fetcher:
             'state': new_fetcher_state,
             'rules': self.rules,
         })
+
+        self.publish_broadcast(
+            event_name=UnpackHelpers.EVENT_NAME['FETCH:NODE:QUEUED'],
+            node_uuid=target_node_uuid,
+            node_url=target_node_url,
+        )
 
         r.set(cache_key, 'true', ex=10 * 60)
 

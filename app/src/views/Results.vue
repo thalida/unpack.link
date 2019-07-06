@@ -10,10 +10,6 @@
 		</form>
     <p>node_stats: {{numNodesQueued}} : {{numNodesInProgress}} : {{numNodesFetched}}</p>
     <p>link_stats: {{numLinksFetched}}</p>
-    <br /><br /><br /><br />
-    {{links}}
-    <br /><br /><br /><br />
-    {{nodes}}
     <!-- <div class="tree">
       <Level
         v-for="(links, level) in linksByLevel"

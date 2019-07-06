@@ -6,23 +6,36 @@ import docker
 import logging
 logger = logging.getLogger(__name__)
 
-from pyrabbit.api import Client
+import requests
+import urllib.parse
 
 from ..helpers import UnpackHelpers
 
-cl = Client(f'http://{os.environ["UNPACK_HOST"]}:55672/api', 'guest', 'guest')
+rabbitmq_api_url = f'http://{os.environ["UNPACK_HOST"]}:15672/api'
+rabbitmq_auth = ('guest', 'guest')
+rabbitmq_vhost = '/'
+
+def quote(string):
+    return urllib.parse.quote(string, safe='')
+
+def get_queue_message_count(queue_name):
+    req_url = f'{rabbitmq_api_url}/queues/{quote(rabbitmq_vhost)}/{quote(queue_name)}'
+    json_res = requests.get(req_url, auth=rabbitmq_auth).json()
+    return json_res['messages']
 
 
 def main(queue_unique_id):
     connection = pika.BlockingConnection(
         pika.ConnectionParameters(os.environ['UNPACK_HOST'])
     )
+
     channel = connection.channel()
 
     fetcher_queue_name = UnpackHelpers.get_queue_name(
         queue_type='fetch',
         queue_unique_id=queue_unique_id
     )
+
     broadcaster_queue_name = UnpackHelpers.get_queue_name(
         queue_type='broadcast',
         queue_unique_id=queue_unique_id
@@ -57,17 +70,15 @@ def main(queue_unique_id):
         if empty_since is not None and (time.time() - empty_since) >= queue_ttl:
             break
 
-        # No need to check to often, this just helps clean things up
         time.sleep(check_queue_rate)
 
-        # redeclearing the queue
-        fetcher_q_len = channel.queue_declare(queue=fetcher_queue_name).method.message_count
-        broadcaster_q_len = channel.queue_declare(queue=broadcaster_queue_name).method.message_count
+        fetcher_q_len = get_queue_message_count(fetcher_queue_name)
+        broadcaster_q_len = get_queue_message_count(broadcaster_queue_name)
         total_q = fetcher_q_len + broadcaster_q_len
 
         if (total_q == 0) and (empty_since is None):
             empty_since = time.time()
-        elif fetcher_q_len > 0 or broadcaster_q_len > 0:
+        elif total_q > 0:
             empty_since = None
 
 
@@ -79,4 +90,4 @@ def main(queue_unique_id):
 
     # The queue has been empty for the TTL, so lets delete it,
     # which will kill all the workers
-    logger.info("Delete stale queue")
+    logger.info(f'Delete stale queues for id: {queue_unique_id}')

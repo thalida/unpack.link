@@ -16,7 +16,6 @@ pika = "*"
 kombu = "*"
 flask-cors = "*"
 docker = "*"
-pyrabbit = "*"
 redis = "*"
 retry = "*"
 

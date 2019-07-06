@@ -4,6 +4,8 @@
         "Vuex",
         "amqp",
         "jsonify",
-        "socketio"
+        "rabbitmq",
+        "socketio",
+        "vhost"
     ]
 }

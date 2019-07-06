@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "99174d3db7a5b9fee9855603a9e830a44175233a3e37aeb762fb5678a3276776"
+            "sha256": "999e1a97da3e64d8332751830e594fcd8b996e009a65238a59a88910d90b3169"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -150,13 +150,6 @@
             ],
             "version": "==0.4.15"
         },
-        "httplib2": {
-            "hashes": [
-                "sha256:158fbd0ffbba536829d664bf3f32c4f45df41f8f791663665162dfaf21ffd075",
-                "sha256:d1146939d270f1f1eb8cbf8f5aa72ff37d897faccca448582bb1e180aeb4c6b2"
-            ],
-            "version": "==0.13.0"
-        },
         "idna": {
             "hashes": [
                 "sha256:c357b3f628cf53ae2c4c05627ecc484553142ca23264e593d327bcde5e9c3407",
@@ -301,13 +294,6 @@
                 "sha256:dc639b046a6e2cff5bbe40194ad65936d6ba360b52b3c3fe1d08a82dd50b5e53"
             ],
             "version": "==1.8.0"
-        },
-        "pyrabbit": {
-            "hashes": [
-                "sha256:50b8995fbfde14820ddc97292312c8f0c77054748c2b018138d03d94e400c39c"
-            ],
-            "index": "pypi",
-            "version": "==1.1.0"
         },
         "python-engineio": {
             "hashes": [

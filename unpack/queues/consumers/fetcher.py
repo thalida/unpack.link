@@ -32,8 +32,8 @@ def main(queue_unique_id):
     )
     connection_params = pika.ConnectionParameters(
         os.environ['UNPACK_HOST'],
-        heartbeat=600,
-        blocked_connection_timeout=300
+        heartbeat=4*60,
+        blocked_connection_timeout=2*60
     )
     connection = pika.BlockingConnection(connection_params)
     channel = connection.channel()
