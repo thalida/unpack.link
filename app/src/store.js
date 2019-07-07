@@ -9,6 +9,9 @@ export default new Vuex.Store({
   strict: isDevelopment,
   state: {
     apiHost: (isDevelopment) ? `http://${window.location.hostname}:5000` : '',
+    requestIds: {
+
+    },
     isLoading: true,
     requestedURL: null,
     queue: null,
@@ -78,9 +81,9 @@ export default new Vuex.Store({
         resolve()
       })
     },
-    saveQueue ({ commit }, { eventKeys, queueUniqueId }) {
+    saveQueue ({ commit }, { eventKeys, requestId }) {
       return new Promise((resolve) => {
-        commit('setQueue', { eventKeys, queueUniqueId })
+        commit('setQueue', { eventKeys, requestId })
         resolve('foobar')
       })
     },

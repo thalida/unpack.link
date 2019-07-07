@@ -25,10 +25,10 @@ def handle_message_callback(*args, **kwargs):
 
 
 @retry(pika.exceptions.AMQPConnectionError, delay=5, jitter=(1, 3))
-def main(queue_unique_id):
+def main(request_id):
     queue_name = UnpackHelpers.get_queue_name(
         queue_type='fetch',
-        queue_unique_id=queue_unique_id
+        request_id=request_id
     )
     connection_params = pika.ConnectionParameters(
         os.environ['UNPACK_HOST'],

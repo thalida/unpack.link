@@ -25,7 +25,7 @@ export default {
   methods: {
     onFormSubmit (e) {
       this.$router.push({
-        name: 'results',
+        name: 'request',
         query: {
           url: this.inputUrl,
         },

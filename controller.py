@@ -52,7 +52,7 @@ def main():
         ],
         help='Unpack action'
     )
-    parser.add_argument('-q', '--queue', help="Queue Unique Id")
+    parser.add_argument('-q', '--request', help="Request Id")
 
     args = parser.parse_args()
 
@@ -62,15 +62,15 @@ def main():
 
     elif args.action == 'queue-manager':
         import unpack.queues.manager
-        unpack.queues.manager.main(queue_unique_id=args.queue)
+        unpack.queues.manager.main(request_id=args.request)
 
     elif args.action == 'queue-fetcher-worker':
         import unpack.queues.consumers.fetcher
-        unpack.queues.consumers.fetcher.main(queue_unique_id=args.queue)
+        unpack.queues.consumers.fetcher.main(request_id=args.request)
 
     elif args.action == 'queue-broadcast-worker':
         import unpack.queues.consumers.broadcaster
-        unpack.queues.consumers.broadcaster.main(queue_unique_id=args.queue)
+        unpack.queues.consumers.broadcaster.main(request_id=args.request)
 
 if __name__ == '__main__':
     main()

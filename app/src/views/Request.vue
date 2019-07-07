@@ -13,7 +13,7 @@ import io from 'socket.io-client'
 import RequestForm from '@/components/RequestForm.vue'
 
 export default {
-  name: 'results',
+  name: 'request',
   props: ['url'],
   components: { RequestForm },
   data: () => {
@@ -22,7 +22,6 @@ export default {
     }
   },
   computed: {
-    // },
     ...mapState({
       apiHost: 'apiHost',
       isLoading: 'isLoading',
@@ -80,7 +79,7 @@ export default {
         .then((response) => {
           return this.$store.dispatch('saveQueue', {
             eventKeys: response.data.event_keys,
-            queueUniqueId: response.data.queue_unique_id,
+            requestId: response.data.request_id,
           })
         })
         .then(() => {
@@ -90,9 +89,9 @@ export default {
     },
 
     startListening () {
-      const queueUniqueId = this.queue.queueUniqueId
-      this.socket = io(`0.0.0.0:5000/${queueUniqueId}`)
-      console.log(`Listening on queue namespace: /${queueUniqueId}`)
+      const requestId = this.queue.requestId
+      this.socket = io(`0.0.0.0:5000/${requestId}`)
+      console.log(`Listening on queue namespace: /${requestId}`)
 
       this.socket.on(this.queue.eventKeys['FETCH:NODE:QUEUED'], (res) => {
         this.$store.dispatch('addOneTo', 'numNodesQueued')
@@ -132,16 +131,16 @@ export default {
     },
 
     startQueue () {
-      const queueUniqueId = this.queue.queueUniqueId
-      console.log(`Starting queue: ${queueUniqueId}`)
-      const path = `${this.apiHost}/api/queue/${queueUniqueId}/start`
+      const requestId = this.queue.requestId
+      console.log(`Starting queue: ${requestId}`)
+      const path = `${this.apiHost}/api/queue/${requestId}/start`
       return axios.post(path)
     },
 
     stopQueue () {
-      const queueUniqueId = this.queue.queueUniqueId
-      console.log(`Stopping queue: ${queueUniqueId}`)
-      const path = `${this.apiHost}/api/queue/${queueUniqueId}/stop`
+      const requestId = this.queue.requestId
+      console.log(`Stopping queue: ${requestId}`)
+      const path = `${this.apiHost}/api/queue/${requestId}/stop`
       return axios.post(path)
     },
   },

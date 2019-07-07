@@ -67,36 +67,36 @@ class UnpackHelpers:
         return UnpackHelpers.hash_url(node_url)
 
     @staticmethod
-    def get_queue_unique_id(node_uuid):
+    def get_request_id(node_uuid):
         ms_timestamp = int(round(time.time() * 1000))
         return f'{node_uuid}:{ms_timestamp}'
 
     @staticmethod
-    def get_queue_name(queue_type, queue_unique_id):
-        return f'{queue_type}:{str(queue_unique_id)}'
+    def get_queue_name(queue_type, request_id):
+        return f'{queue_type}:{str(request_id)}'
 
     @staticmethod
-    def get_queue_unique_id_from_name(queue_name):
+    def get_request_id_from_name(queue_name):
         return queue_name.split(':', 1)[-1]
 
     @staticmethod
-    def get_queue_event_keys(queue_unique_id):
+    def get_queue_event_keys(request_id):
         try:
-            queue_event_keys = {evt: f'{evt.lower()}:{queue_unique_id}' for evt in UnpackHelpers.EVENT_NAME}
+            queue_event_keys = {evt: f'{evt.lower()}:{request_id}' for evt in UnpackHelpers.EVENT_NAME}
             return queue_event_keys
         except Exception:
             UnpackHelpers.raise_error(
                 'Error getting queue_event_keys',
-                queue_unique_id=queue_unique_id,
+                request_id=request_id,
             )
 
     @staticmethod
-    def start_docker_container(container_name, queue_unique_id):
+    def start_docker_container(container_name, request_id):
         docker_client = docker.from_env()
         container_settings = UnpackHelpers.DOCKER_CONTAINER_SETTINGS[container_name]
         volumes = {}
         action = container_settings['controller_action']
-        command = f"{action} -q {queue_unique_id}"
+        command = f"{action} -q {request_id}"
 
         if container_settings.get('can_create_containers', False):
             volumes.update({

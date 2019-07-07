@@ -32,14 +32,14 @@ def queue_create():
         rules = request.json.get('rules')
 
         node_uuid = UnpackHelpers.fetch_node_uuid(node_url)
-        queue_unique_id = UnpackHelpers.get_queue_unique_id(node_uuid=node_uuid)
-        event_keys = UnpackHelpers.get_queue_event_keys(queue_unique_id)
+        request_id = UnpackHelpers.get_request_id(node_uuid=node_uuid)
+        event_keys = UnpackHelpers.get_queue_event_keys(request_id)
 
         connection = pika.BlockingConnection(pika.ConnectionParameters(os.environ['UNPACK_HOST']))
         channel = connection.channel()
         fetcher_queue_name = UnpackHelpers.get_queue_name(
             queue_type='fetch',
-            queue_unique_id=queue_unique_id
+            request_id=request_id
         )
         channel.queue_declare(queue=fetcher_queue_name)
         channel.basic_publish(
@@ -55,7 +55,7 @@ def queue_create():
         connection.close()
 
         return jsonify({
-            'queue_unique_id': queue_unique_id,
+            'request_id': request_id,
             'event_keys': event_keys,
         })
     except Exception:
@@ -68,7 +68,7 @@ def queue_start(queue_uid):
     try:
         container = UnpackHelpers.start_docker_container(
             container_name=UnpackHelpers.DOCKER_CONTAINER_NAMES['QUEUE_MANAGER'],
-            queue_unique_id=queue_uid,
+            request_id=queue_uid,
         )
         return jsonify({'container': container.id})
     except Exception as e:
@@ -83,11 +83,11 @@ def queue_stop(queue_uid):
         channel = connection.channel()
         fetcher_queue_name = UnpackHelpers.get_queue_name(
             queue_type='fetch',
-            queue_unique_id=queue_uid
+            request_id=queue_uid
         )
         broadcaster_queue_name = UnpackHelpers.get_queue_name(
             queue_type='broadcast',
-            queue_unique_id=queue_uid
+            request_id=queue_uid
         )
         channel.queue_delete(queue=fetcher_queue_name)
         channel.queue_delete(queue=broadcaster_queue_name)

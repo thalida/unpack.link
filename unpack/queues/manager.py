@@ -24,7 +24,7 @@ def get_queue_message_count(queue_name):
     return json_res.get('messages', 0)
 
 
-def main(queue_unique_id):
+def main(request_id):
     connection = pika.BlockingConnection(
         pika.ConnectionParameters(os.environ['UNPACK_HOST'])
     )
@@ -33,18 +33,18 @@ def main(queue_unique_id):
 
     fetcher_queue_name = UnpackHelpers.get_queue_name(
         queue_type='fetch',
-        queue_unique_id=queue_unique_id
+        request_id=request_id
     )
 
     broadcaster_queue_name = UnpackHelpers.get_queue_name(
         queue_type='broadcast',
-        queue_unique_id=queue_unique_id
+        request_id=request_id
     )
 
     fetcher_q = channel.queue_declare(queue=fetcher_queue_name)
     broadcaster_q = channel.queue_declare(queue=broadcaster_queue_name)
 
-    logger.info(f'Creating queues for id: {queue_unique_id}')
+    logger.info(f'Creating queues for id: {request_id}')
 
     empty_since = None
     queue_ttl = 1 * 60
@@ -54,14 +54,14 @@ def main(queue_unique_id):
     # Workers to create
     broadcast_container = UnpackHelpers.start_docker_container(
         container_name=UnpackHelpers.DOCKER_CONTAINER_NAMES['QUEUE_BROADCAST_WORKER'],
-        queue_unique_id=queue_unique_id,
+        request_id=request_id,
     )
     containers.append(broadcast_container)
 
     for i in range(10):
         fetcher_container = UnpackHelpers.start_docker_container(
             container_name=UnpackHelpers.DOCKER_CONTAINER_NAMES['QUEUE_FETCHER_WORKER'],
-            queue_unique_id=queue_unique_id,
+            request_id=request_id,
         )
         containers.append(fetcher_container)
 
@@ -90,4 +90,4 @@ def main(queue_unique_id):
 
     # The queue has been empty for the TTL, so lets delete it,
     # which will kill all the workers
-    logger.info(f'Delete stale queues for id: {queue_unique_id}')
+    logger.info(f'Delete stale queues for id: {request_id}')

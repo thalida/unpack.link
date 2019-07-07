@@ -38,7 +38,7 @@ class Fetcher:
 
     def __init__(self, ch, method, properties, body):
         self.channel = ch
-        self.queue_unique_id = UnpackHelpers.get_queue_unique_id_from_name(method.routing_key)
+        self.request_id = UnpackHelpers.get_request_id_from_name(method.routing_key)
 
         body = json.loads(body)
 
@@ -176,7 +176,7 @@ class Fetcher:
         if target_node_url == source_node_url:
             return
 
-        cache_key = f'{self.queue_unique_id}:{target_node_uuid}'
+        cache_key = f'{self.request_id}:{target_node_uuid}'
 
         if r.exists(cache_key):
             return
@@ -202,7 +202,7 @@ class Fetcher:
         r.set(cache_key, 'true', ex=10 * 60)
 
     def publish_broadcast(self, event_name, **kwargs):
-        queue_name = UnpackHelpers.get_queue_name('broadcast', self.queue_unique_id)
+        queue_name = UnpackHelpers.get_queue_name('broadcast', self.request_id)
         self.channel.basic_publish(
             exchange='',
             routing_key=queue_name,
@@ -216,7 +216,7 @@ class Fetcher:
             ))
 
     def publish_child(self, body):
-        queue_name = UnpackHelpers.get_queue_name('fetch', self.queue_unique_id)
+        queue_name = UnpackHelpers.get_queue_name('fetch', self.request_id)
         self.channel.basic_publish(
             exchange='',
             routing_key=queue_name,
