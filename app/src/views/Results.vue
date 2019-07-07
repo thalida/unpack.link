@@ -12,12 +12,15 @@ import axios from 'axios'
 import io from 'socket.io-client'
 import RequestForm from '@/components/RequestForm.vue'
 
-const socket = io('0.0.0.0:5000')
-
 export default {
   name: 'results',
   props: ['url'],
   components: { RequestForm },
+  data: () => {
+    return {
+      socket: null,
+    }
+  },
   computed: {
     // },
     ...mapState({
@@ -62,6 +65,7 @@ export default {
 
     breakdown () {
       this.stopQueue()
+      this.socket.close()
       this.$store.dispatch('resetResultsData')
     },
 
@@ -87,19 +91,24 @@ export default {
 
     startListening () {
       const queueUniqueId = this.queue.queueUniqueId
-      console.log(`Listening on queue: ${queueUniqueId}`)
+      this.socket = io(`0.0.0.0:5000/${queueUniqueId}`)
+      // TODO: DO CLEANUP WHEN DISCONNECTED
+      // this.socket.on('connect', () => {
+      //   this.socket.emit('connected', {data: 'I\'m connected!'});
+      // })
+      console.log(`Listening on queue namespace: /${queueUniqueId}`)
 
-      socket.on(this.queue.eventKeys['FETCH:NODE:QUEUED'], (res) => {
+      this.socket.on(this.queue.eventKeys['FETCH:NODE:QUEUED'], (res) => {
         this.$store.dispatch('addOneTo', 'numNodesQueued')
         console.log('FETCH:NODE:QUEUED', res)
       })
 
-      socket.on(this.queue.eventKeys['FETCH:NODE:IN_PROGRESS'], (res) => {
+      this.socket.on(this.queue.eventKeys['FETCH:NODE:IN_PROGRESS'], (res) => {
         this.$store.dispatch('addOneTo', 'numNodesInProgress')
         console.log('FETCH:NODE:IN_PROGRESS', res)
       })
 
-      socket.on(this.queue.eventKeys['FETCH:NODE:COMPLETED'], (res) => {
+      this.socket.on(this.queue.eventKeys['FETCH:NODE:COMPLETED'], (res) => {
         let node
 
         if (typeof res === 'object') {
@@ -112,7 +121,7 @@ export default {
         console.log('FETCH:NODE:COMPLETED', res)
       })
 
-      socket.on(this.queue.eventKeys['STORE:LINK:COMPLETED'], (res) => {
+      this.socket.on(this.queue.eventKeys['STORE:LINK:COMPLETED'], (res) => {
         let link
 
         if (typeof res === 'object') {
