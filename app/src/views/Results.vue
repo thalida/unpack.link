@@ -92,10 +92,6 @@ export default {
     startListening () {
       const queueUniqueId = this.queue.queueUniqueId
       this.socket = io(`0.0.0.0:5000/${queueUniqueId}`)
-      // TODO: DO CLEANUP WHEN DISCONNECTED
-      // this.socket.on('connect', () => {
-      //   this.socket.emit('connected', {data: 'I\'m connected!'});
-      // })
       console.log(`Listening on queue namespace: /${queueUniqueId}`)
 
       this.socket.on(this.queue.eventKeys['FETCH:NODE:QUEUED'], (res) => {

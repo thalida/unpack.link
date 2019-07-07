@@ -98,30 +98,6 @@ def queue_stop(queue_uid):
         logger.exception(f'Error stopping queue: {queue_uid}')
         abort(500)
 
-
-# @socketio.on('connect')
-# def handle_connected():
-#     logger.debug('poiuy socketio connected with other logs')
-#     # logger.debug(socketio.__dict__)
-#     # logger.debug(socketio.server.__dict__)
-#     logger.debug(socketio.server_options['client_manager'].__dict__)
-#     logger.debug('=========/////============')
-#     # logger.debug(socketio..__dict__)
-#     # logger.debug(json.dumps(request.args.to_dict(flat=False)))
-#     # logger.debug(json.dumps({h: request.headers[h] for h in request.headers.keys()
-#     #                  if h not in ['Host', 'Content-Type', 'Content-Length']}))
-#     # logger.debug(json)
-#     # queue_unique_id = json.get('queue_unique_id')
-
-# @socketio.on('disconnect')
-# def handle_disconnected():
-#     logger.debug('qwerty socketio disconnected with json')
-#     logger.debug(json.dumps(request.args.to_dict(flat=False)))
-#     logger.debug(json.dumps({h: request.headers[h] for h in request.headers.keys()
-#                              if h not in ['Host', 'Content-Type', 'Content-Length']}))
-#     # logger.debug(json)
-#     # queue_unique_id = json.get('queue_unique_id')
-
 def main():
     is_debug = os.environ['UNPACK_DEV_ENV'] == 'TRUE'
     socketio.run(app, host='0.0.0.0', port='5000', debug=is_debug)
