@@ -83,6 +83,7 @@ export default {
           })
         })
         .then(() => {
+          this.$store.dispatch('addOneTo', 'numNodesQueued')
           this.startListening()
           this.startQueue()
         })
@@ -93,17 +94,33 @@ export default {
       this.socket = io(`0.0.0.0:5000/${requestId}`)
       console.log(`Listening on queue namespace: /${requestId}`)
 
-      this.socket.on(this.queue.eventKeys['FETCH:NODE:QUEUED'], (res) => {
+      this.socket.on(this.queue.eventKeys['REQUEST:QUEUED'], (res) => {
+        console.log('REQUEST:QUEUED', res)
+      })
+
+      this.socket.on(this.queue.eventKeys['REQUEST:IN_PROGRESS'], (res) => {
+        console.log('REQUEST:IN_PROGRESS', res)
+      })
+
+      this.socket.on(this.queue.eventKeys['REQUEST:COMPLETED'], (res) => {
+        console.log('REQUEST:COMPLETED', res)
+      })
+
+      this.socket.on(this.queue.eventKeys['REQUEST:HEARTBEAT'], (res) => {
+        console.log('REQUEST:HEARTBEAT', res)
+      })
+
+      this.socket.on(this.queue.eventKeys['NODE:QUEUED'], (res) => {
         this.$store.dispatch('addOneTo', 'numNodesQueued')
-        console.log('FETCH:NODE:QUEUED', res)
+        console.log('NODE:QUEUED', res)
       })
 
-      this.socket.on(this.queue.eventKeys['FETCH:NODE:IN_PROGRESS'], (res) => {
+      this.socket.on(this.queue.eventKeys['NODE:IN_PROGRESS'], (res) => {
         this.$store.dispatch('addOneTo', 'numNodesInProgress')
-        console.log('FETCH:NODE:IN_PROGRESS', res)
+        console.log('NODE:IN_PROGRESS', res)
       })
 
-      this.socket.on(this.queue.eventKeys['FETCH:NODE:COMPLETED'], (res) => {
+      this.socket.on(this.queue.eventKeys['NODE:COMPLETED'], (res) => {
         let node
 
         if (typeof res === 'object') {
@@ -113,10 +130,10 @@ export default {
         }
 
         this.$store.dispatch('addNode', node)
-        console.log('FETCH:NODE:COMPLETED', res)
+        console.log('NODE:COMPLETED', res)
       })
 
-      this.socket.on(this.queue.eventKeys['STORE:LINK:COMPLETED'], (res) => {
+      this.socket.on(this.queue.eventKeys['LINK:COMPLETED'], (res) => {
         let link
 
         if (typeof res === 'object') {
@@ -126,7 +143,7 @@ export default {
         }
 
         this.$store.dispatch('addLink', link)
-        console.log('STORE:LINK:COMPLETED', res)
+        console.log('LINK:COMPLETED', res)
       })
     },
 

@@ -65,7 +65,7 @@ class Fetcher:
         self.is_origin_node = self.source_node_uuid is None
 
         self.publish_broadcast(
-            event_name=UnpackHelpers.EVENT_NAME['FETCH:NODE:IN_PROGRESS'],
+            event_name=UnpackHelpers.EVENT_NAME['NODE:IN_PROGRESS'],
             node_uuid=self.node_uuid,
             node_url=self.node_url,
         )
@@ -96,7 +96,7 @@ class Fetcher:
             )
 
         self.publish_broadcast(
-            event_name=UnpackHelpers.EVENT_NAME['FETCH:NODE:COMPLETED'],
+            event_name=UnpackHelpers.EVENT_NAME['NODE:COMPLETED'],
             node_uuid=self.node_uuid,
             node_url=self.node_url,
             node_metadata=node_metadata,
@@ -163,7 +163,7 @@ class Fetcher:
         )
 
         self.publish_broadcast(
-            event_name=UnpackHelpers.EVENT_NAME['STORE:LINK:COMPLETED'],
+            event_name=UnpackHelpers.EVENT_NAME['LINK:COMPLETED'],
             source_node_url=source_node_url,
             source_node_uuid=source_node_uuid,
             target_node_url=target_node_url,
@@ -194,7 +194,7 @@ class Fetcher:
         })
 
         self.publish_broadcast(
-            event_name=UnpackHelpers.EVENT_NAME['FETCH:NODE:QUEUED'],
+            event_name=UnpackHelpers.EVENT_NAME['NODE:QUEUED'],
             node_uuid=target_node_uuid,
             node_url=target_node_url,
         )
@@ -208,7 +208,6 @@ class Fetcher:
             routing_key=queue_name,
             body=json.dumps({
                 'event_name': event_name,
-                'origin_source_node_url': self.origin_source_node_url,
                 'data': kwargs,
             }, default=str),
             properties=pika.BasicProperties(
