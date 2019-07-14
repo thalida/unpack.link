@@ -1,7 +1,5 @@
 <template>
     <form id="input-form" @submit.prevent="onFormSubmit">
-    <router-link to="/">Home</router-link>
-    <router-link to="/about">About</router-link>
     <input
         v-model="inputUrl"
         type="url"

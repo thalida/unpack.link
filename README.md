@@ -6,6 +6,13 @@ Run `npm run serve`
 Check that it's running with `docker ps`
 
 
+## Touch
+- /tmp/unpack_api-server_logs.log
+- /tmp/unpack_queue-manager_logs.log
+- /tmp/unpack_queue-fetcher-worker_logs.log
+- /tmp/unpack_queue-broadcast-worker_logs.log
+
+
 ## Examples
 ### Twitter
 ```

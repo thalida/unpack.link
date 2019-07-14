@@ -23,7 +23,7 @@ class ContentTypeWebsite:
     def setup_node_details(cls, node_data=None, is_error=False, is_from_db=False):
         node_details = {
             'node_type': cls.TYPE,
-            'data': json.dumps(node_data, default=str),
+            'data': node_data,
             'is_error': is_error,
             'is_from_db': is_from_db,
         }
@@ -49,7 +49,7 @@ class ContentTypeWebsite:
         else:
             now = datetime.datetime.now()
             min_update_date = now - datetime.timedelta(seconds=rules['refresh_after'])
-            raw_node_details = UnpackHelpers.fetch_node_metadata(
+            raw_node_details = UnpackHelpers.fetch_node(
                 node_uuid,
                 min_update_date=min_update_date
             )
@@ -74,7 +74,7 @@ class ContentTypeWebsite:
 
     @classmethod
     def get_node_and_links_from_db(cls, node_uuid, node_url):
-        raw_node_details = UnpackHelpers.fetch_node_metadata(node_uuid)
+        raw_node_details = UnpackHelpers.fetch_node(node_uuid)
         raw_links = []
 
         if raw_node_details is not None:
@@ -110,15 +110,18 @@ class ContentTypeWebsite:
                 for n in sel.css('meta[name*=og]')
             ]
             node_data = {
-                'base_url': node_url,
                 'meta': {
-                    'title': sel.css('title::text').getall(),
-                    'description': sel.css('meta[name=description]::attr(content)').getall(),
+                    'title': sel.css('title::text').get(),
+                    'description': sel.css('meta[name=description]::attr(content)').get(),
                     'twitter': twitter_meta,
                     'og': og_meta,
                     'favicon': sel.css('link[rel*=shortcut]::attr(href)').get(),
                 }
             }
+
+            if node_data['meta']['favicon'] and len(node_data['meta']['favicon']) > 0:
+                node_data['meta']['favicon'] = urljoin(node_url, node_data['meta']['favicon'])
+
             node_details = cls.setup_node_details(node_data=node_data)
 
             page_links = sel.css('body a::attr(href), body img::attr(src)').getall()

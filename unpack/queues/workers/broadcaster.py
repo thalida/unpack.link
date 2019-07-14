@@ -22,6 +22,6 @@ class Broadcaster:
 
         socketio.emit(
             queue_event_keys[event_name],
-            json.dumps(body['data'], default=str),
+            body['data'],
             namespace=f'/{request_id}',
         )

@@ -16,7 +16,8 @@ export default new Vuex.Store({
     requestedURL: null,
     queue: null,
     nodes: {},
-    links: [],
+    links: {},
+    linksByLevel: [],
     numNodesQueued: 0,
     numNodesInProgress: 0,
     numNodesFetched: 0,
@@ -27,6 +28,11 @@ export default new Vuex.Store({
         force_from_db: false,
         force_from_web: false,
       },
+    },
+  },
+  getters: {
+    getNodeByUUID: (state) => (nodeUUID) => {
+      return state.nodes[nodeUUID]
     },
   },
   mutations: {
@@ -45,11 +51,31 @@ export default new Vuex.Store({
         return
       }
 
-      Vue.set(state.nodes, node.node_uuid, node)
+      Vue.set(state.nodes, nodeUUID, node)
       state.numNodesFetched += 1
     },
     addLink (state, link) {
-      Vue.set(state.links, state.links.length, link)
+      const linkID = `${link.source_node_uuid}:${link.target_node_uuid}`
+      const newLevel = link.level
+
+      if (linkID in state.links) {
+        const oldLevel = state.links[linkID].level
+        if (newLevel >= oldLevel) {
+          return
+        }
+
+        state.linksByLevel[oldLevel] = state.linksByLevel[oldLevel].filter((value) => value !== linkID)
+        Vue.delete(state.links, linkID)
+      }
+
+      Vue.set(state.links, linkID, link)
+
+      if (typeof state.linksByLevel[newLevel] === 'undefined') {
+        state.linksByLevel[newLevel] = []
+      }
+      state.linksByLevel[newLevel].push(linkID)
+      Vue.set(state.linksByLevel, newLevel, state.linksByLevel[newLevel])
+
       state.numLinksFetched += 1
     },
     add (state, { stateVar, n }) {
@@ -57,8 +83,9 @@ export default new Vuex.Store({
       state[stateVar] += n
     },
     resetResultsData (state) {
-      state.nodes = []
-      state.links = []
+      state.nodes = {}
+      state.links = {}
+      state.linksByLevel = []
       state.queue = null
       state.numNodesQueued = 0
       state.numNodesInProgress = 0

@@ -3,6 +3,12 @@
     <RequestForm :url="requestedURL" />
     <p>node_stats: {{numNodesQueued}} : {{numNodesInProgress}} : {{numNodesFetched}}</p>
     <p>link_stats: {{numLinksFetched}}</p>
+    <Level
+      v-for="(links, level) in linksByLevel"
+      :key="level"
+      :level="level"
+      :links="links"
+      />
   </div>
 </template>
 
@@ -11,11 +17,12 @@ import { mapState } from 'vuex'
 import axios from 'axios'
 import io from 'socket.io-client'
 import RequestForm from '@/components/RequestForm.vue'
+import Level from '@/components/Request/Level.vue'
 
 export default {
   name: 'request',
   props: ['url'],
-  components: { RequestForm },
+  components: { RequestForm, Level },
   data: () => {
     return {
       socket: null,
@@ -30,6 +37,7 @@ export default {
       queue: 'queue',
       nodes: 'nodes',
       links: 'links',
+      linksByLevel: 'linksByLevel',
       numNodesQueued: 'numNodesQueued',
       numNodesInProgress: 'numNodesInProgress',
       numLinksFetched: 'numLinksFetched',

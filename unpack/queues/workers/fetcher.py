@@ -78,7 +78,7 @@ class Fetcher:
             return
 
         type_cls, node_url_match = Fetcher.get_node_type_class_by_url(self.node_url)
-        node_metadata, raw_links = type_cls.fetch(
+        node_details, raw_links = type_cls.fetch(
             self.node_uuid,
             self.node_url,
             url_matches=node_url_match,
@@ -87,19 +87,19 @@ class Fetcher:
 
         has_links = len(raw_links) > 0
 
-        if not node_metadata.get('is_from_db', True):
-            UnpackHelpers.store_node_metadata(
+        if not node_details.get('is_from_db', True):
+            UnpackHelpers.store_node(
                 self.node_uuid,
-                node_type=node_metadata.get('node_type'),
-                data=node_metadata.get('data'),
-                is_error=node_metadata.get('is_error'),
+                node_type=node_details.get('node_type'),
+                data=node_details.get('data'),
+                is_error=node_details.get('is_error'),
             )
 
         self.publish_broadcast(
             event_name=UnpackHelpers.EVENT_NAME['NODE:COMPLETED'],
             node_uuid=self.node_uuid,
             node_url=self.node_url,
-            node_metadata=node_metadata,
+            node_details=node_details,
         )
 
         if not has_links:
@@ -168,6 +168,7 @@ class Fetcher:
             source_node_uuid=source_node_uuid,
             target_node_url=target_node_url,
             target_node_uuid=target_node_uuid,
+            level=self.state['level'] + 1,
             link_type=raw_link.get('link_type'),
             weight=raw_link.get('weight'),
         )
@@ -184,14 +185,14 @@ class Fetcher:
         new_fetcher_state = self.state.copy()
         new_fetcher_state['level'] += 1
 
-        self.publish_child({
-            'node_uuid': target_node_uuid,
-            'node_url': target_node_url,
-            'source_node_uuid': source_node_uuid,
-            'origin_source_node_url': self.origin_source_node_url,
-            'state': new_fetcher_state,
-            'rules': self.rules,
-        })
+        self.publish_child(
+            node_uuid=target_node_uuid,
+            node_url=target_node_url,
+            source_node_uuid=source_node_uuid,
+            origin_source_node_url=self.origin_source_node_url,
+            state=new_fetcher_state,
+            rules=self.rules,
+        )
 
         self.publish_broadcast(
             event_name=UnpackHelpers.EVENT_NAME['NODE:QUEUED'],
@@ -214,12 +215,12 @@ class Fetcher:
                 delivery_mode=2,  # make message persistent
             ))
 
-    def publish_child(self, body):
+    def publish_child(self, **kwargs):
         queue_name = UnpackHelpers.get_queue_name('fetch', self.request_id)
         self.channel.basic_publish(
             exchange='',
             routing_key=queue_name,
-            body=json.dumps(body),
+            body=json.dumps(kwargs),
             properties=pika.BasicProperties(
                 delivery_mode=2,  # make message persistent
             ))

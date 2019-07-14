@@ -187,10 +187,10 @@ class UnpackHelpers:
         return False
 
     @staticmethod
-    def store_node(node_url):
+    def store_node_url(node_url):
         try:
             query = """
-                    INSERT INTO node (url)
+                    INSERT INTO node_uuid_to_url (url)
                     VALUES (%s)
                     ON CONFLICT (url) DO NOTHING
                     RETURNING uuid
@@ -202,10 +202,10 @@ class UnpackHelpers:
             UnpackHelpers.raise_error('Error inserting a new node: {node_url}', node_url=node_url)
 
     @staticmethod
-    def store_node_metadata(node_uuid, node_type=None, data=None, is_error=None):
+    def store_node(node_uuid, node_type=None, data=None, is_error=None):
         try:
             query = """
-                    INSERT INTO node_metadata (uuid, node_type, data, is_error)
+                    INSERT INTO node (uuid, node_type, data, is_error)
                     VALUES (%s, %s, %s, %s)
                     ON CONFLICT (uuid) DO UPDATE
                         SET node_type = EXCLUDED.node_type,
@@ -214,7 +214,7 @@ class UnpackHelpers:
                             updated_on = timezone('utc'::text, now())
                     RETURNING (uuid, node_type, data, is_error)
                     """
-            query_data = (node_uuid, node_type, data, is_error)
+            query_data = (node_uuid, node_type, json.dumps(data, default=str), is_error)
             res = UnpackHelpers.execute_sql('fetchone', query, query_data)
             return res
         except Exception:
@@ -244,12 +244,12 @@ class UnpackHelpers:
             )
 
     @staticmethod
-    def fetch_node_metadata(node_uuid, min_update_date=None):
+    def fetch_node(node_uuid, min_update_date=None):
         try:
             if min_update_date is not None:
                 query = """
                         SELECT uuid, node_type, data, is_error
-                        FROM node_metadata
+                        FROM node
                         WHERE uuid = %s
                         AND updated_on > %s
                         """
@@ -257,7 +257,7 @@ class UnpackHelpers:
             else:
                 query = """
                         SELECT uuid, node_type, data, is_error
-                        FROM node_metadata
+                        FROM node
                         WHERE uuid = %s
                         """
                 query_args = (node_uuid,)
@@ -267,6 +267,7 @@ class UnpackHelpers:
                 query,
                 query_args,
             )
+            res['data'] = json.loads(res['data'])
             return res
         except Exception:
             UnpackHelpers.raise_error('Unpack: Error fetching metadta for with node_uuid: {node_uuid}', node_uuid=node_uuid)
@@ -280,7 +281,7 @@ class UnpackHelpers:
                     WHERE source_node_uuid = %s
                     AND updated_on >= (
                         SELECT max(n.updated_on)
-                        FROM node_metadata as n
+                        FROM node as n
                         WHERE n.uuid = %s
                     )
                     ORDER BY l.updated_on DESC
@@ -309,14 +310,14 @@ class UnpackHelpers:
                 'fetchone',
                 """
                 SELECT uuid
-                FROM node
+                FROM node_uuid_to_url
                 WHERE url = %s
                 """,
                 (node_url,)
             )
 
             if insert_on_new and res is None:
-                res = UnpackHelpers.store_node(node_url)
+                res = UnpackHelpers.store_node_url(node_url)
 
             node_uuid = res.get('uuid')
             r.set(cache_key, node_uuid.encode('utf-8'))
@@ -342,7 +343,7 @@ class UnpackHelpers:
                 'fetchone',
                 """
                 SELECT url
-                FROM node
+                FROM node_uuid_to_url
                 WHERE uuid = %s
                 """,
                 (node_uuid,)
