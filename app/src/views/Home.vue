@@ -21,7 +21,9 @@ export default {
 
 <style lang="scss">
 .home {
-  width: 50%;
+  width: 80%;
+  max-width: 600px;
+  min-width: 300px;
   margin: 0 auto;
 
   .form {

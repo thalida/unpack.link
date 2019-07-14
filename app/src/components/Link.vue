@@ -39,6 +39,11 @@
             {{websiteMeta.title}}
           </span>
         </div>
+        <p
+          v-if="websiteMeta.description"
+          class="link__description">
+          {{websiteMeta.description}}
+        </p>
         <p class="link__url">{{targetNodeUrl}}</p>
       </div>
       <div class="link__related link__related--to-node">
@@ -141,7 +146,6 @@ export default {
       }
 
       const meta = this.targetNode.node_details.data.meta
-
       return Object.assign({}, meta, {
         favicon_alt: `${meta.title} favicon`
       })
@@ -188,7 +192,12 @@ export default {
       align-items: center;
       & > div {
         width: 100%;
+        text-align: center;
       }
+    }
+
+    &--media {
+      text-align: center;
     }
   }
 
@@ -204,11 +213,14 @@ export default {
     overflow: hidden;
   }
 
-  &__title {}
+  &__title {
+    font-size: 18px;
+    font-weight: bold;
+  }
 
-  &__img-embed {
-    flex: 0 1 auto;
-    align-self: flex-start;
+  &__description {
+    font-size: 14px;
+    margin: 4px 0;
   }
 
   &__url {
