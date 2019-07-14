@@ -1,8 +1,11 @@
 <template>
  <div class="results" v-if="!isLoading">
-    <RequestForm :url="requestedURL" />
-    <p>node_stats: {{numNodesQueued}} : {{numNodesInProgress}} : {{numNodesFetched}}</p>
-    <p>link_stats: {{numLinksFetched}}</p>
+    <UrlInput :url="requestedURL" />
+    <p class="results__stats">
+      <span class="results__stats__number">{{numLinksFetched}} links</span>
+      across
+      <span class="results__stats__number">{{numNodesQueued}} sites</span>
+    </p>
     <Level
       v-for="(links, level) in linksByLevel"
       :key="level"
@@ -16,13 +19,13 @@
 import { mapState } from 'vuex'
 import axios from 'axios'
 import io from 'socket.io-client'
-import RequestForm from '@/components/RequestForm.vue'
-import Level from '@/components/Request/Level.vue'
+import UrlInput from '@/components/UrlInput.vue'
+import Level from '@/components/Level.vue'
 
 export default {
   name: 'request',
   props: ['url'],
-  components: { RequestForm, Level },
+  components: { UrlInput, Level },
   data: () => {
     return {
       socket: null,
@@ -100,72 +103,56 @@ export default {
     startListening () {
       const requestId = this.queue.requestId
       this.socket = io(`0.0.0.0:5000/${requestId}`)
-      console.log(`Listening on queue namespace: /${requestId}`)
+      // console.log(`Listening on queue namespace: /${requestId}`)
 
-      this.socket.on(this.queue.eventKeys['REQUEST:QUEUED'], (res) => {
-        console.log('REQUEST:QUEUED', res)
-      })
+      // this.socket.on(this.queue.eventKeys['REQUEST:QUEUED'], (res) => {
+      //   console.log('REQUEST:QUEUED', res)
+      // })
 
-      this.socket.on(this.queue.eventKeys['REQUEST:IN_PROGRESS'], (res) => {
-        console.log('REQUEST:IN_PROGRESS', res)
-      })
+      // this.socket.on(this.queue.eventKeys['REQUEST:IN_PROGRESS'], (res) => {
+      //   console.log('REQUEST:IN_PROGRESS', res)
+      // })
 
-      this.socket.on(this.queue.eventKeys['REQUEST:COMPLETED'], (res) => {
-        console.log('REQUEST:COMPLETED', res)
-      })
+      // this.socket.on(this.queue.eventKeys['REQUEST:COMPLETED'], (res) => {
+      //   console.log('REQUEST:COMPLETED', res)
+      // })
 
-      this.socket.on(this.queue.eventKeys['REQUEST:HEARTBEAT'], (res) => {
-        console.log('REQUEST:HEARTBEAT', res)
-      })
+      // this.socket.on(this.queue.eventKeys['REQUEST:HEARTBEAT'], (res) => {
+      //   console.log('REQUEST:HEARTBEAT', res)
+      // })
 
       this.socket.on(this.queue.eventKeys['NODE:QUEUED'], (res) => {
         this.$store.dispatch('addOneTo', 'numNodesQueued')
-        console.log('NODE:QUEUED', res)
+        // console.log('NODE:QUEUED', res)
       })
 
       this.socket.on(this.queue.eventKeys['NODE:IN_PROGRESS'], (res) => {
         this.$store.dispatch('addOneTo', 'numNodesInProgress')
-        console.log('NODE:IN_PROGRESS', res)
+        // console.log('NODE:IN_PROGRESS', res)
       })
 
       this.socket.on(this.queue.eventKeys['NODE:COMPLETED'], (res) => {
-        let node
-
-        if (typeof res === 'object') {
-          node = JSON.parse(JSON.stringify(res))
-        } else {
-          node = JSON.parse(res)
-        }
-
-        this.$store.dispatch('addNode', node)
-        console.log('NODE:COMPLETED', res)
+        this.$store.dispatch('addNode', res)
+        // console.log('NODE:COMPLETED', res)
       })
 
       this.socket.on(this.queue.eventKeys['LINK:COMPLETED'], (res) => {
-        let link
-
-        if (typeof res === 'object') {
-          link = JSON.parse(JSON.stringify(res))
-        } else {
-          link = JSON.parse(res)
-        }
-
-        this.$store.dispatch('addLink', link)
-        console.log('LINK:COMPLETED', res)
+        this.$store.dispatch('addLink', res)
+        // console.log('LINK:COMPLETED', res)
       })
     },
 
     startQueue () {
       const requestId = this.queue.requestId
-      console.log(`Starting queue: ${requestId}`)
       const path = `${this.apiHost}/api/queue/${requestId}/start`
+      // console.log(`Starting queue: ${requestId}`)
       return axios.post(path)
     },
 
     stopQueue () {
       const requestId = this.queue.requestId
-      console.log(`Stopping queue: ${requestId}`)
       const path = `${this.apiHost}/api/queue/${requestId}/stop`
+      // console.log(`Stopping queue: ${requestId}`)
       return axios.post(path)
     },
   },
@@ -173,10 +160,18 @@ export default {
 </script>
 
 <style lang="scss">
-.tree {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-gap: 10px;
-  grid-auto-rows: minmax(100px, auto);
+.results {
+  width: 50%;
+  max-width: 600px;
+  min-width: 300px;
+  margin: 0 auto;
+
+  &__stats {
+    font-size: 14px;
+
+    &__number {
+      font-weight: bold;
+    }
+  }
 }
 </style>

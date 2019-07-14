@@ -1,6 +1,8 @@
 <template>
-    <div v-if="links">
-      <h2>{{level}}</h2>
+    <div v-if="links" class="level">
+      <h2 class="level__header">
+        {{level}}° <span v-if="level === 1">away</span>
+      </h2>
       <Link
         v-for="(linkId, index) in links"
         :key="index"
@@ -10,7 +12,7 @@
 </template>
 
 <script>
-import Link from '@/components/Request/Link.vue'
+import Link from '@/components/Link.vue'
 export default {
   name: 'Level',
   props: {
@@ -23,4 +25,12 @@ export default {
 }
 </script>
 
-<style lang="scss"></style>
+<style lang="scss">
+.level {
+  margin: 30px 0 60px;
+
+  &__header {
+    margin-bottom: 30px;
+  }
+}
+</style>

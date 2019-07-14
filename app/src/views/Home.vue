@@ -1,15 +1,15 @@
 <template>
   <div class="home">
-    <RequestForm :url="url" />
+    <UrlInput :url="url" />
   </div>
 </template>
 
 <script>
-import RequestForm from '@/components/RequestForm.vue'
+import UrlInput from '@/components/UrlInput.vue'
 
 export default {
   name: 'home',
-  components: { RequestForm },
+  components: { UrlInput },
   data: () => {
     return {
       'url': null,
@@ -19,4 +19,9 @@ export default {
 }
 </script>
 
-<style lang="scss"></style>
+<style lang="scss">
+.home {
+  width: 50%;
+  margin: 0 auto;
+}
+</style>

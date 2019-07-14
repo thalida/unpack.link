@@ -34,6 +34,24 @@ export default new Vuex.Store({
     getNodeByUUID: (state) => (nodeUUID) => {
       return state.nodes[nodeUUID]
     },
+    getLinksBySourceUUID: (state) => (findNodeUUID) => {
+      const linkIds = Object.keys(state.links)
+      const matchingIds = linkIds.filter((linkId) => {
+        const linkParts = linkId.split(':')
+        const currNodeSourceUUID = linkParts[0]
+        return currNodeSourceUUID === findNodeUUID
+      })
+      return matchingIds
+    },
+    getLinksByTargetUUID: (state) => (findNodeUUID) => {
+      const linkIds = Object.keys(state.links)
+      const matchingIds = linkIds.filter((linkId) => {
+        const linkParts = linkId.split(':')
+        const currNodeTargetUUID = linkParts[1]
+        return currNodeTargetUUID === findNodeUUID
+      })
+      return matchingIds
+    },
   },
   mutations: {
     setIsLoading (state, status) {
