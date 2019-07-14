@@ -4,12 +4,13 @@
         v-if="nodeType === 'twitter'"
         class="link__contents link__contents--twitter">
         <Tweet
-          class="foobar"
           :id="twitterData.id_str"
           :options="{
             theme: 'dark',
-            conversation: 'none'
+            conversation: 'none',
+            cards: 'default',
           }" />
+        <p class="link__url">{{targetNodeUrl}}</p>
       </div>
       <div
         v-else-if="nodeType === 'media'"
@@ -139,7 +140,7 @@ export default {
         return {}
       }
 
-      const meta = this.targetNode.node_details.data.meta;
+      const meta = this.targetNode.node_details.data.meta
 
       return Object.assign({}, meta, {
         favicon_alt: `${meta.title} favicon`
@@ -182,13 +183,19 @@ export default {
     padding: 15px 30px;
     border: 1px solid #fff;
     cursor: pointer;
+
+    &--twitter {
+      align-items: center;
+      & > div {
+        width: 100%;
+      }
+    }
   }
 
   &__titlebar {
     display: flex;
     align-items: center;
   }
-
 
   &__favicon {
     width: 16px;
@@ -231,6 +238,10 @@ export default {
       order: 1;
       margin-left: -8px;
     }
+  }
+
+  .twitter-tweet {
+    width: 100% !important;
   }
 }
 </style>

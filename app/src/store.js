@@ -130,7 +130,7 @@ export default new Vuex.Store({
     saveQueue ({ commit }, { eventKeys, requestId }) {
       return new Promise((resolve) => {
         commit('setQueue', { eventKeys, requestId })
-        resolve('foobar')
+        resolve()
       })
     },
     addNode ({ commit }, node) {

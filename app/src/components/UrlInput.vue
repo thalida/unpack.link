@@ -60,6 +60,19 @@ export default {
     background: transparent;
     color: #fff;
     font: 16px/1.5 'Share', 'Arial', 'serif';
+
+    &::placeholder {
+      color: #fff;
+      font: 16px/1.5 'Share', 'Arial', 'serif';
+    }
+
+    &:focus {
+      outline: none;
+    }
+
+    &:focus::placeholder {
+      color: rgba(#fff, 0.5);
+    }
   }
 
   &__button {

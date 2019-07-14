@@ -1,10 +1,10 @@
 <template>
- <div class="results" v-if="!isLoading">
+ <div class="request" v-if="!isLoading">
     <UrlInput :url="requestedURL" />
-    <p class="results__stats">
-      <span class="results__stats__number">{{numLinksFetched}} links</span>
+    <p class="request__stats">
+      <span class="request__stats__number">{{numLinksFetched}} links</span>
       across
-      <span class="results__stats__number">{{numNodesQueued}} sites</span>
+      <span class="request__stats__number">{{numNodesQueued}} sites</span>
     </p>
     <Level
       v-for="(links, level) in linksByLevel"
@@ -160,8 +160,8 @@ export default {
 </script>
 
 <style lang="scss">
-.results {
-  width: 50%;
+.request {
+  width: 80%;
   max-width: 600px;
   min-width: 300px;
   margin: 0 auto;
