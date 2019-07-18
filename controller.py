@@ -45,7 +45,7 @@ def main():
     parser.add_argument(
         'action',
         choices=[
-            'api-server',
+            'api',
             'queue-manager',
             'queue-fetcher-worker',
             'queue-broadcast-worker',
@@ -56,9 +56,9 @@ def main():
 
     args = parser.parse_args()
 
-    if args.action == 'api-server':
-        import unpack.api.server
-        unpack.api.server.main()
+    if args.action == 'api':
+        import unpack.api
+        unpack.api.main()
 
     elif args.action == 'queue-manager':
         import unpack.queues.manager

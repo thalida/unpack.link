@@ -18,13 +18,13 @@ services:
     ports:
       - 8080:80
 
-  api_server:
+  api:
     build: .
     image: unpack_container
     depends_on:
       - rabbitmq
       - redis
-    command: 'api-server'
+    command: 'api'
     ports:
       - 5000:5000
     environment:
@@ -39,4 +39,4 @@ services:
       - /Users/thalida/Repos/unpack.link/unpack:/unpack
       - /Users/thalida/Repos/unpack.link/controller.py:/controller.py
       - /var/run/docker.sock:/var/run/docker.sock
-      - /tmp/unpack_api-server_logs.log:/tmp/unpack_logs.log
+      - /tmp/unpack_api_logs.log:/tmp/unpack_logs.log
