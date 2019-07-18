@@ -58,7 +58,7 @@
             class="link__description">
             {{websiteMeta.description}}
           </p>
-          <p class="link__url">{{targetNodeUrl}}</p>
+          <p class="link__url link__url--inline">{{targetNodeUrl}}</p>
         </div>
         <!-- Does NOT have meta data -->
         <div v-else>
@@ -226,12 +226,15 @@ export default {
 
   &__titlebar {
     display: flex;
-    align-items: center;
+    flex-flow: row nowrap;
+    align-items: flex-start;
   }
 
   &__favicon {
+    flex: 0 0 auto;
     width: 16px;
     height: 16px;
+    margin-top: 2px;
     margin-right: 4px;
     overflow: hidden;
   }
@@ -251,12 +254,21 @@ export default {
     font-size: 12px;
     opacity: 0.5;
 
+    &--inline {
+      margin-left: 20px;
+    }
+
     &--large {
+      padding-top: 10px;
+      padding-bottom: 10px;
+
       font-size: 18px;
       font-weight: bold;
       line-height: 1.2;
-      padding-top: 10px;
-      padding-bottom: 10px;
+
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
   }
 
