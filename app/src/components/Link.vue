@@ -1,51 +1,72 @@
 <template>
     <div class="link">
+      <!-- Twitter -->
       <div
         v-if="nodeType === 'twitter'"
         class="link__contents link__contents--twitter">
-        <Tweet
-          :id="twitterData.id_str"
-          :options="{
-            theme: 'dark',
-            conversation: 'none',
-            cards: 'default',
-          }" />
-        <p class="link__url">{{targetNodeUrl}}</p>
+        <!-- Has tweet data -->
+        <div v-if="twitterData !== null">
+          <Tweet
+            :id="twitterData.id_str"
+            :options="{
+              theme: 'dark',
+              conversation: 'none',
+              cards: 'default',
+            }" />
+          <p class="link__url">{{targetNodeUrl}}</p>
+        </div>
+        <!-- Does NOT have tweet data -->
+        <div v-else>
+          <p class="link__url link__url--large">{{targetNodeUrl}}</p>
+        </div>
       </div>
+
+      <!-- Media/Image -->
       <div
         v-else-if="nodeType === 'media'"
         class="link__contents link__contents--media"
         v-on:click="handleClick"
         v-on:keyup.enter="handleClick"
         tabindex="0">
-        <img v-if="targetNodeUrl" :src="targetNodeUrl" class="link__img-embed" />
+        <img :src="targetNodeUrl" class="link__img-embed" />
         <p class="link__url">{{targetNodeUrl}}</p>
       </div>
+
+      <!-- Website -->
       <div
         v-else
         class="link__contents link__contents--website"
         v-on:click="handleClick"
         v-on:keyup.enter="handleClick"
         tabindex="0">
-        <div class="link__titlebar">
-          <img
-            v-if="websiteMeta.favicon"
-            class="link__favicon"
-            :src="websiteMeta.favicon"
-            :alt="websiteMeta.favicon_alt" />
-          <span
-            v-if="websiteMeta.title"
-            class="link__title">
-            {{websiteMeta.title}}
-          </span>
+        <!-- Has meta data -->
+        <div v-if="websiteMeta !== null">
+          <div class="link__titlebar">
+            <img
+              v-if="websiteMeta.favicon"
+              class="link__favicon"
+              :src="websiteMeta.favicon"
+              :alt="websiteMeta.favicon_alt" />
+            <span
+              v-if="websiteMeta.title"
+              class="link__title">
+              {{websiteMeta.title}}
+            </span>
+          </div>
+          <p
+            v-if="websiteMeta.description"
+            class="link__description">
+            {{websiteMeta.description}}
+          </p>
+          <p class="link__url">{{targetNodeUrl}}</p>
         </div>
-        <p
-          v-if="websiteMeta.description"
-          class="link__description">
-          {{websiteMeta.description}}
-        </p>
-        <p class="link__url">{{targetNodeUrl}}</p>
+        <!-- Does NOT have meta data -->
+        <div v-else>
+          <p class="link__url link__url--large">{{targetNodeUrl}}</p>
+        </div>
       </div>
+
+      <!-- Links going to this node -->
       <div class="link__related link__related--to-node">
         <span class="link__related__count">{{totalLinksToTargetNode}}</span>
         <svg width="16px" height="16px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
@@ -62,6 +83,8 @@
             </g>
         </svg>
       </div>
+
+      <!-- Links going from this node -->
       <div class="link__related link__related--from-node">
         <span class="link__related__count">{{totalLinksFromTargetNode}}</span>
         <svg width="16px" height="17px" viewBox="0 0 16 17" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
@@ -126,14 +149,14 @@ export default {
     },
     twitterData () {
       if (this.nodeType !== 'twitter' || !this.nodeHasDetails) {
-        return {}
+        return null
       }
 
       return this.targetNode.node_details.data
     },
     websiteMeta () {
       if (this.nodeType !== 'website' || !this.nodeHasDetails) {
-        return {}
+        return null
       }
 
       const hasMeta = (
@@ -142,7 +165,7 @@ export default {
       )
 
       if (!hasMeta) {
-        return {}
+        return null
       }
 
       const meta = this.targetNode.node_details.data.meta
@@ -216,6 +239,7 @@ export default {
   &__title {
     font-size: 18px;
     font-weight: bold;
+    line-height: 1.2;
   }
 
   &__description {
@@ -226,6 +250,14 @@ export default {
   &__url {
     font-size: 12px;
     opacity: 0.5;
+
+    &--large {
+      font-size: 18px;
+      font-weight: bold;
+      line-height: 1.2;
+      padding-top: 10px;
+      padding-bottom: 10px;
+    }
   }
 
   &__related {
