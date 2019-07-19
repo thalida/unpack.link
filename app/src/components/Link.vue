@@ -3,9 +3,11 @@
       <!-- Twitter -->
       <div
         v-if="nodeType === 'twitter'"
-        class="link__contents link__contents--twitter">
+        class="link__wrapper">
         <!-- Has tweet data -->
-        <div v-if="twitterData !== null">
+        <div
+          v-if="twitterData !== null"
+          class="link__contents link__contents--twitter">
           <Tweet
             :id="twitterData.id_str"
             :options="{
@@ -16,7 +18,9 @@
           <p class="link__url">{{targetNodeUrl}}</p>
         </div>
         <!-- Does NOT have tweet data -->
-        <div v-else>
+        <div
+          v-else
+          class="link__contents link__contents--twitter">
           <p class="link__url link__url--large">{{targetNodeUrl}}</p>
         </div>
       </div>
@@ -35,33 +39,37 @@
       <!-- Website -->
       <div
         v-else
-        class="link__contents link__contents--website"
+        class="link__wrapper"
         v-on:click="handleClick"
         v-on:keyup.enter="handleClick"
         tabindex="0">
         <!-- Has meta data -->
-        <div v-if="websiteMeta !== null">
-          <div class="link__titlebar">
-            <img
-              v-if="websiteMeta.favicon"
-              class="link__favicon"
-              :src="websiteMeta.favicon"
-              :alt="websiteMeta.favicon_alt" />
+        <div
+          v-if="websiteMeta !== null"
+          class="link__contents link__contents--website">
+          <img
+            v-if="websiteMeta.favicon"
+            class="link__favicon"
+            :src="websiteMeta.favicon"
+            :alt="websiteMeta.favicon_alt" />
+          <div class="link__text">
             <span
               v-if="websiteMeta.title"
               class="link__title">
               {{websiteMeta.title}}
             </span>
+            <p
+              v-if="websiteMeta.description"
+              class="link__description">
+              {{websiteMeta.description}}
+            </p>
+            <p class="link__url link__url--inline">{{targetNodeUrl}}</p>
           </div>
-          <p
-            v-if="websiteMeta.description"
-            class="link__description">
-            {{websiteMeta.description}}
-          </p>
-          <p class="link__url link__url--inline">{{targetNodeUrl}}</p>
         </div>
         <!-- Does NOT have meta data -->
-        <div v-else>
+        <div
+          v-else
+          class="link__contents link__contents--website">
           <p class="link__url link__url--large">{{targetNodeUrl}}</p>
         </div>
       </div>
@@ -202,10 +210,14 @@ export default {
   width: 100%;
   margin: 30px 0;
 
+  &__wrapper {
+    width: 100%;
+  }
+
   &__contents {
     display: flex;
     align-content: center;
-    flex-direction: column;
+    flex-direction: row;
     width: 100%;
     padding: 15px 30px;
     border: 1px solid #fff;
@@ -220,6 +232,7 @@ export default {
     }
 
     &--media {
+      flex-direction: column;
       text-align: center;
     }
   }
@@ -254,9 +267,7 @@ export default {
     font-size: 12px;
     opacity: 0.5;
 
-    &--inline {
-      margin-left: 20px;
-    }
+    &--inline {}
 
     &--large {
       padding-top: 10px;
