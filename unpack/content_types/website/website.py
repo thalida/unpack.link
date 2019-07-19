@@ -115,12 +115,17 @@ class ContentTypeWebsite:
                     'description': sel.css('meta[name=description]::attr(content)').get(),
                     'twitter': twitter_meta,
                     'og': og_meta,
-                    'favicon': sel.css('link[rel*=shortcut]::attr(href)').get(),
+                    'favicon': None,
                 }
             }
 
-            if node_data['meta']['favicon'] and len(node_data['meta']['favicon']) > 0:
-                node_data['meta']['favicon'] = urljoin(node_url, node_data['meta']['favicon'])
+            shortcut_favicon = sel.css('link[rel*=shortcut]::attr(href)').get()
+            icon_favicon = sel.css('link[rel*=icon]::attr(href)').get()
+
+            if shortcut_favicon and len(shortcut_favicon) > 0:
+                node_data['meta']['favicon'] = urljoin(node_url, shortcut_favicon)
+            elif icon_favicon and len(icon_favicon) > 0:
+                node_data['meta']['favicon'] = urljoin(node_url, icon_favicon)
 
             node_details = cls.setup_node_details(node_data=node_data)
 

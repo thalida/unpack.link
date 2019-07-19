@@ -219,7 +219,7 @@ export default {
     align-content: center;
     flex-direction: row;
     width: 100%;
-    padding: 15px 30px;
+    padding: 20px;
     border: 1px solid #fff;
     cursor: pointer;
 
@@ -249,19 +249,18 @@ export default {
     width: 16px;
     height: 16px;
     margin-top: 2px;
-    margin-right: 4px;
+    margin-right: 10px;
     overflow: hidden;
   }
 
   &__title {
     font-size: 18px;
     font-weight: bold;
-    line-height: 1.2;
   }
 
   &__description {
     font-size: 14px;
-    margin: 4px 0;
+    margin: 8px 0;
   }
 
   &__url {
@@ -271,12 +270,8 @@ export default {
     &--inline {}
 
     &--large {
-      padding-top: 10px;
-      padding-bottom: 10px;
-
       font-size: 18px;
       font-weight: bold;
-      line-height: 1.2;
 
       white-space: nowrap;
       overflow: hidden;

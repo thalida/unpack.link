@@ -24,9 +24,9 @@ export default new Vuex.Store({
     numLinksFetched: 0,
     settings: {
       rules: {
-        max_link_depth: 2,
+        max_link_depth: 1,
         force_from_db: false,
-        force_from_web: false,
+        force_from_web: true,
       },
     },
   },

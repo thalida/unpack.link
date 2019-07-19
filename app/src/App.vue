@@ -16,7 +16,7 @@ body {
   padding: 0;
   background: #000;
   color: #fff;
-  font: 16px/1.5 'Share', 'Arial', 'serif';
+  font: 16px/1.2 'Share', 'Arial', 'serif';
 }
 p,
 h2 {
