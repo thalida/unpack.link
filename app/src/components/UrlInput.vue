@@ -1,11 +1,19 @@
 <template>
-  <form class="form" @submit.prevent="onFormSubmit">
+  <form
+    class="form"
+    :class="[
+      `form--${theme}`,
+      isFocused ? 'form--is_focused' : ''
+    ]"
+    @submit.prevent="onFormSubmit">
     <input
         class="form__input"
         v-model="inputUrl"
         type="url"
         placeholder="http://"
-        required />
+        required
+        @focus="onInputFocus"
+        @blur="onInputBlur" />
     <button class="form__button" type="submit">
       <svg width="18px" height="11px" viewBox="0 0 18 11" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
           <g id="Try-#3---Cleaned---Outside-Checkmark" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
@@ -27,13 +35,22 @@ export default {
   name: 'RequestForm',
   props: {
     'url': String,
+    'theme': String,
   },
   data () {
     return {
+      isFocused: false,
       inputUrl: this.url,
     }
   },
+  computed: {},
   methods: {
+    onInputFocus () {
+      this.isFocused = true
+    },
+    onInputBlur () {
+      this.isFocused = false
+    },
     onFormSubmit (e) {
       this.$router.push({
         name: 'request',
@@ -41,7 +58,7 @@ export default {
           url: this.inputUrl,
         },
       })
-    }
+    },
   }
 }
 </script>
@@ -80,6 +97,27 @@ export default {
     width: 32px;
     background: transparent;
     border: 0;
+  }
+
+  &--fancy {
+    position: relative;
+
+    &:before {
+      content: "";
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      z-index: -1;
+      background: #2538FF;
+      transition: all 300ms ease
+    }
+
+    &.form--is_focused:before {
+      top: 0;
+      left: 0;
+    }
   }
 }
 </style>

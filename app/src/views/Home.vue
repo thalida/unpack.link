@@ -1,6 +1,6 @@
 <template>
   <div class="home">
-    <UrlInput :url="url" />
+    <UrlInput :url="url" theme="fancy" />
   </div>
 </template>
 
@@ -25,20 +25,5 @@ export default {
   max-width: 600px;
   min-width: 300px;
   margin: 0 auto;
-
-  .form {
-    position: relative;
-
-    &:before {
-      content: "";
-      width: 100%;
-      height: 100%;
-      position: absolute;
-      top: 8px;
-      left: 8px;
-      background: #2538FF;
-      z-index: -1;
-    }
-  }
 }
 </style>
