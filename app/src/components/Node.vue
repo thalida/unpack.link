@@ -15,13 +15,13 @@
               conversation: 'none',
               cards: 'default',
             }" />
-          <p class="node__url">{{nodeUrl}}</p>
+          <p class="node__url node__url--tiny">{{nodeUrl}}</p>
         </div>
         <!-- Does NOT have tweet data -->
         <div
           v-else
           class="node__contents node__contents--twitter">
-          <p class="node__url node__url--large">{{nodeUrl}}</p>
+          <p class="node__url node__url--title">{{nodeUrl}}</p>
         </div>
       </div>
 
@@ -33,7 +33,7 @@
         v-on:keyup.enter="handleClick"
         tabindex="0">
         <img :src="nodeUrl" class="node__img-embed" />
-        <p class="node__url">{{nodeUrl}}</p>
+        <p class="node__url node__url--tiny">{{nodeUrl}}</p>
       </div>
 
       <!-- Website -->
@@ -63,14 +63,14 @@
               class="node__description">
               {{websiteMeta.description}}
             </p>
-            <p class="node__url node__url--inline">{{nodeUrl}}</p>
+            <p class="node__url node__url--tiny">{{nodeUrl}}</p>
           </div>
         </div>
         <!-- Does NOT have meta data -->
         <div
           v-else
           class="node__contents node__contents--website">
-          <p class="node__url node__url--large">{{nodeUrl}}</p>
+          <p class="node__url node__url--title">{{nodeUrl}}</p>
         </div>
       </div>
     </div>
@@ -207,10 +207,12 @@ export default {
   }
 
   &__url {
-    font-size: 12px;
-    opacity: 0.5;
+    &--tiny {
+      font-size: 12px;
+      opacity: 0.5;
+    }
 
-    &--large {
+    &--title {
       font-size: 18px;
       font-weight: bold;
 
