@@ -1,11 +1,14 @@
 <template>
  <div class="request" v-if="!isLoading">
-    <UrlInput :url="requestedURL" />
+    <UrlInput :url="requestedUrl" />
     <p class="request__stats">
       <span class="request__stats__number">{{numLinksFetched}} links</span>
       across
       <span class="request__stats__number">{{numNodesQueued}} sites</span>
     </p>
+    <Node
+      :node-uuid="requestedUUID"
+      :node-url="requestedUrl" />
     <Level
       v-for="(links, level) in linksByLevel"
       :key="level"
@@ -19,25 +22,31 @@
 import { mapState } from 'vuex'
 import axios from 'axios'
 import io from 'socket.io-client'
+
 import UrlInput from '@/components/UrlInput.vue'
+import Node from '@/components/Node.vue'
 import Level from '@/components/Level.vue'
 
 export default {
   name: 'request',
   props: ['url'],
-  components: { UrlInput, Level },
+  components: { UrlInput, Node, Level },
   data: () => {
     return {
+      isLoading: true,
       socket: null,
+      queue: null,
+      requestedUUID: null,
+      requestStatus: null,
     }
   },
   computed: {
+    requestedUrl () {
+      return this.url
+    },
     ...mapState({
       apiHost: 'apiHost',
-      isLoading: 'isLoading',
       settings: 'settings',
-      requestedURL: 'requestedURL',
-      queue: 'queue',
       nodes: 'nodes',
       links: 'links',
       linksByLevel: 'linksByLevel',
@@ -49,73 +58,62 @@ export default {
   },
 
   created () {
-    this.setup(this.url)
-    window.addEventListener('unload', this.breakdown)
+    this.$store
+      .dispatch('setupResultsData', { url: this.requestedUrl })
+      .then(() => {
+        this.createQueue()
+        window.addEventListener('unload', this.breakdown)
+        this.isLoading = false
+      })
   },
 
-  beforeRouteUpdate (to, from, next) {
+  beforeDestroy () {
+    this.stopListening()
     this.stopQueue()
-    this.setup(to.query.url)
-    next()
-  },
-
-  beforeRouteLeave (to, from, next) {
-    this.breakdown()
-    next()
   },
 
   methods: {
-    setup (url) {
-      this.$store
-        .dispatch('setupResultsData', { url })
-        .then(() => {
-          this.createQueue()
-        })
-    },
-
-    breakdown () {
-      this.stopQueue()
-      this.socket.close()
-      this.$store.dispatch('resetResultsData')
-    },
-
     createQueue () {
       const path = `${this.apiHost}/api/queue/create`
       const params = {
-        url: this.requestedURL,
+        url: this.requestedUrl,
         rules: this.settings.rules,
       }
       return axios
         .post(path, params)
         .then((response) => {
-          return this.$store.dispatch('saveQueue', {
+          this.queue = Object.assign({}, {
             eventKeys: response.data.event_keys,
             requestId: response.data.request_id,
           })
-        })
-        .then(() => {
-          this.$store.dispatch('addOneTo', 'numNodesQueued')
+
           this.startListening()
           this.startQueue()
+
+          this.$store.dispatch('addOneTo', 'numNodesQueued')
         })
     },
 
     startListening () {
       const requestId = this.queue.requestId
       this.socket = io(`0.0.0.0:5000/${requestId}`)
+      this.requestStatus = 'listening'
       // console.log(`Listening on queue namespace: /${requestId}`)
 
-      // this.socket.on(this.queue.eventKeys['REQUEST:QUEUED'], (res) => {
-      //   console.log('REQUEST:QUEUED', res)
-      // })
+      this.socket.on(this.queue.eventKeys['REQUEST:QUEUED'], (res) => {
+        this.requestStatus = 'queued'
+        // console.log('REQUEST:QUEUED', res)
+      })
 
-      // this.socket.on(this.queue.eventKeys['REQUEST:IN_PROGRESS'], (res) => {
-      //   console.log('REQUEST:IN_PROGRESS', res)
-      // })
+      this.socket.on(this.queue.eventKeys['REQUEST:IN_PROGRESS'], (res) => {
+        this.requestStatus = 'in_progress'
+        // console.log('REQUEST:IN_PROGRESS', res)
+      })
 
-      // this.socket.on(this.queue.eventKeys['REQUEST:COMPLETED'], (res) => {
-      //   console.log('REQUEST:COMPLETED', res)
-      // })
+      this.socket.on(this.queue.eventKeys['REQUEST:COMPLETED'], (res) => {
+        this.requestStatus = 'completed'
+        // console.log('REQUEST:COMPLETED', res)
+      })
 
       // this.socket.on(this.queue.eventKeys['REQUEST:HEARTBEAT'], (res) => {
       //   console.log('REQUEST:HEARTBEAT', res)
@@ -149,7 +147,24 @@ export default {
       return axios.post(path)
     },
 
+    stopListening () {
+      if (this.socket === null) {
+        return
+      }
+
+      this.socket.close()
+    },
+
     stopQueue () {
+      if (
+        typeof this.queue === 'undefined' ||
+        this.queue === null ||
+        typeof this.queue.requestId === 'undefined' ||
+        this.queue.requestId === null
+      ) {
+        return
+      }
+
       const requestId = this.queue.requestId
       const path = `${this.apiHost}/api/queue/${requestId}/stop`
       // console.log(`Stopping queue: ${requestId}`)

@@ -63,31 +63,52 @@ def queue_create():
         abort(500)
 
 
-@app.route('/api/queue/<string:queue_uid>/start', methods=['POST'])
-def queue_start(queue_uid):
+@app.route('/api/queue/<string:request_id>/start', methods=['POST'])
+def queue_start(request_id):
     try:
         container = UnpackHelpers.start_docker_container(
             container_name=UnpackHelpers.DOCKER_CONTAINER_NAMES['QUEUE_MANAGER'],
-            request_id=queue_uid,
+            request_id=request_id,
         )
+
+        connection = pika.BlockingConnection(pika.ConnectionParameters(os.environ['UNPACK_HOST']))
+        channel = connection.channel()
+        broadcaster_queue_name = UnpackHelpers.get_queue_name(
+            queue_type='broadcast',
+            request_id=request_id
+        )
+        channel.queue_declare(queue=broadcaster_queue_name)
+        channel.basic_publish(
+            exchange='',
+            routing_key=broadcaster_queue_name,
+            body=json.dumps({
+                'event_name': UnpackHelpers.EVENT_NAME['REQUEST:QUEUED'],
+                'data': {},
+            }, default=str),
+            properties=pika.BasicProperties(
+                delivery_mode=2,  # make message persistent
+            )
+        )
+        connection.close()
+
         return jsonify({'container': container.id})
     except Exception as e:
-        logger.exception(f'Error starting queue: {queue_uid}')
+        logger.exception(f'Error starting queue: {request_id}')
         abort(500)
 
 
-@app.route('/api/queue/<string:queue_uid>/stop', methods=['POST'])
-def queue_stop(queue_uid):
+@app.route('/api/queue/<string:request_id>/stop', methods=['POST'])
+def queue_stop(request_id):
     try:
         connection = pika.BlockingConnection(pika.ConnectionParameters(os.environ['UNPACK_HOST']))
         channel = connection.channel()
         fetcher_queue_name = UnpackHelpers.get_queue_name(
             queue_type='fetch',
-            request_id=queue_uid
+            request_id=request_id
         )
         broadcaster_queue_name = UnpackHelpers.get_queue_name(
             queue_type='broadcast',
-            request_id=queue_uid
+            request_id=request_id
         )
         channel.queue_delete(queue=fetcher_queue_name)
         channel.queue_delete(queue=broadcaster_queue_name)
@@ -95,7 +116,7 @@ def queue_stop(queue_uid):
 
         return jsonify({'success': True})
     except Exception as e:
-        logger.exception(f'Error stopping queue: {queue_uid}')
+        logger.exception(f'Error stopping queue: {request_id}')
         abort(500)
 
 def main():

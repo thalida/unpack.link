@@ -1,78 +1,8 @@
 <template>
     <div class="link">
-      <!-- Twitter -->
-      <div
-        v-if="nodeType === 'twitter'"
-        class="link__wrapper">
-        <!-- Has tweet data -->
-        <div
-          v-if="twitterData !== null"
-          class="link__contents link__contents--twitter">
-          <Tweet
-            :id="twitterData.id_str"
-            :options="{
-              theme: 'dark',
-              conversation: 'none',
-              cards: 'default',
-            }" />
-          <p class="link__url">{{targetNodeUrl}}</p>
-        </div>
-        <!-- Does NOT have tweet data -->
-        <div
-          v-else
-          class="link__contents link__contents--twitter">
-          <p class="link__url link__url--large">{{targetNodeUrl}}</p>
-        </div>
-      </div>
-
-      <!-- Media/Image -->
-      <div
-        v-else-if="nodeType === 'media'"
-        class="link__contents link__contents--media"
-        v-on:click="handleClick"
-        v-on:keyup.enter="handleClick"
-        tabindex="0">
-        <img :src="targetNodeUrl" class="link__img-embed" />
-        <p class="link__url">{{targetNodeUrl}}</p>
-      </div>
-
-      <!-- Website -->
-      <div
-        v-else
-        class="link__wrapper"
-        v-on:click="handleClick"
-        v-on:keyup.enter="handleClick"
-        tabindex="0">
-        <!-- Has meta data -->
-        <div
-          v-if="websiteMeta !== null"
-          class="link__contents link__contents--website">
-          <img
-            v-if="websiteMeta.favicon"
-            class="link__favicon"
-            :src="websiteMeta.favicon"
-            :alt="websiteMeta.favicon_alt" />
-          <div class="link__text">
-            <span
-              v-if="websiteMeta.title"
-              class="link__title">
-              {{websiteMeta.title}}
-            </span>
-            <p
-              v-if="websiteMeta.description"
-              class="link__description">
-              {{websiteMeta.description}}
-            </p>
-            <p class="link__url link__url--inline">{{targetNodeUrl}}</p>
-          </div>
-        </div>
-        <!-- Does NOT have meta data -->
-        <div
-          v-else
-          class="link__contents link__contents--website">
-          <p class="link__url link__url--large">{{targetNodeUrl}}</p>
-        </div>
-      </div>
+      <Node
+        :node-uuid="targeNodeUUID"
+        :node-url="targetNodeUrl" />
 
       <!-- Links going to this node -->
       <div class="link__related link__related--to-node">
@@ -113,13 +43,14 @@
 </template>
 
 <script>
-import { Tweet } from 'vue-tweet-embed'
+import Node from '@/components/Node.vue'
+
 export default {
   name: 'Link',
   props: {
     'linkId': String,
   },
-  components: { Tweet },
+  components: { Node },
   computed: {
     link () {
       return this.$store.state.links[this.linkId]
@@ -129,57 +60,6 @@ export default {
     },
     targetNodeUrl () {
       return this.link.target_node_url
-    },
-    targetNode () {
-      return this.$store.getters.getNodeByUUID(this.targeNodeUUID)
-    },
-    nodeType () {
-      if (typeof this.targetNode === 'undefined') {
-        return null
-      }
-      return this.targetNode.node_details.node_type
-    },
-    nodeHasDetails () {
-      const hasDetails = (
-        typeof this.targetNode !== 'undefined' &&
-        typeof this.targetNode.node_details !== 'undefined'
-      )
-
-      if (!hasDetails) {
-        return false
-      }
-
-      if (this.targetNode.node_details.is_error) {
-        return false
-      }
-
-      return true
-    },
-    twitterData () {
-      if (this.nodeType !== 'twitter' || !this.nodeHasDetails) {
-        return null
-      }
-
-      return this.targetNode.node_details.data
-    },
-    websiteMeta () {
-      if (this.nodeType !== 'website' || !this.nodeHasDetails) {
-        return null
-      }
-
-      const hasMeta = (
-        typeof this.targetNode.node_details.data !== 'undefined' &&
-        typeof this.targetNode.node_details.data.meta !== 'undefined'
-      )
-
-      if (!hasMeta) {
-        return null
-      }
-
-      const meta = this.targetNode.node_details.data.meta
-      return Object.assign({}, meta, {
-        favicon_alt: `${meta.title} favicon`
-      })
     },
     linksToTargetNode () {
       return this.$store.getters.getLinksByTargetUUID(this.targeNodeUUID)
@@ -194,11 +74,6 @@ export default {
       return this.linksFromTargetNode.length
     },
   },
-  methods: {
-    handleClick () {
-      window.open(this.targetNodeUrl, '_blank')
-    }
-  },
 }
 </script>
 
@@ -208,76 +83,7 @@ export default {
   flex-direction: row;
   align-items: center;
   width: 100%;
-  margin: 30px 0;
-
-  &__wrapper {
-    width: 100%;
-  }
-
-  &__contents {
-    display: flex;
-    align-content: center;
-    flex-direction: row;
-    width: 100%;
-    padding: 20px;
-    border: 1px solid #fff;
-    cursor: pointer;
-
-    &--twitter {
-      flex-direction: column;
-      align-items: center;
-      & > div {
-        width: 100%;
-        text-align: center;
-      }
-    }
-
-    &--media {
-      flex-direction: column;
-      text-align: center;
-    }
-  }
-
-  &__titlebar {
-    display: flex;
-    flex-flow: row nowrap;
-    align-items: flex-start;
-  }
-
-  &__favicon {
-    flex: 0 0 auto;
-    width: 16px;
-    height: 16px;
-    margin-top: 2px;
-    margin-right: 10px;
-    overflow: hidden;
-  }
-
-  &__title {
-    font-size: 18px;
-    font-weight: bold;
-  }
-
-  &__description {
-    font-size: 14px;
-    margin: 8px 0;
-  }
-
-  &__url {
-    font-size: 12px;
-    opacity: 0.5;
-
-    &--inline {}
-
-    &--large {
-      font-size: 18px;
-      font-weight: bold;
-
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-  }
+  margin: 30px -8px;
 
   &__related {
     z-index: 1;
@@ -301,10 +107,6 @@ export default {
       order: 1;
       margin-left: -8px;
     }
-  }
-
-  .twitter-tweet {
-    width: 100% !important;
   }
 }
 </style>

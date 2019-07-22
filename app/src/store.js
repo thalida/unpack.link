@@ -9,12 +9,6 @@ export default new Vuex.Store({
   strict: isDevelopment,
   state: {
     apiHost: (isDevelopment) ? `http://${window.location.hostname}:5000` : '',
-    requestIds: {
-
-    },
-    isLoading: true,
-    requestedURL: null,
-    queue: null,
     nodes: {},
     links: {},
     linksByLevel: [],
@@ -26,7 +20,7 @@ export default new Vuex.Store({
       rules: {
         max_link_depth: 1,
         force_from_db: false,
-        force_from_web: true,
+        force_from_web: false,
       },
     },
   },
@@ -54,15 +48,6 @@ export default new Vuex.Store({
     },
   },
   mutations: {
-    setIsLoading (state, status) {
-      state.isLoading = status
-    },
-    setRequestedUrl (state, url) {
-      state.requestedURL = url
-    },
-    setQueue (state, queue) {
-      state.queue = Object.assign({}, queue)
-    },
     addNode (state, node) {
       const nodeUUID = node.node_uuid
       if (nodeUUID in state.nodes) {
@@ -76,25 +61,34 @@ export default new Vuex.Store({
       const linkID = `${link.source_node_uuid}:${link.target_node_uuid}`
       const newLevel = link.level
 
+      // If the link already exists
       if (linkID in state.links) {
-        const oldLevel = state.links[linkID].level
-        if (newLevel >= oldLevel) {
+        // Get the current level and check if the new level is farther away
+        // (ex. level 1 is closer than level 5)
+        const currLevel = state.links[linkID].level
+        if (newLevel >= currLevel) {
           return
         }
 
-        state.linksByLevel[oldLevel] = state.linksByLevel[oldLevel].filter((value) => value !== linkID)
+        // The new level is closer, so let's remove the old link (we'll add it back in later)
+        state.linksByLevel[currLevel] = state.linksByLevel[currLevel].filter((value) => value !== linkID)
         Vue.delete(state.links, linkID)
       }
 
+      // Add the link to the collection of all links
       Vue.set(state.links, linkID, link)
 
+      // Setup a new level collection if one doesn't exist yet
       if (typeof state.linksByLevel[newLevel] === 'undefined') {
         state.linksByLevel[newLevel] = []
       }
+
+      // Add this link (by id) to the new level
       state.linksByLevel[newLevel].push(linkID)
       Vue.set(state.linksByLevel, newLevel, state.linksByLevel[newLevel])
 
-      state.numLinksFetched += 1
+      // Yas! We've added a new link!
+      state.numLinksFetched = Object.keys(state.links).length
     },
     add (state, { stateVar, n }) {
       n = n || 1
@@ -104,7 +98,6 @@ export default new Vuex.Store({
       state.nodes = {}
       state.links = {}
       state.linksByLevel = []
-      state.queue = null
       state.numNodesQueued = 0
       state.numNodesInProgress = 0
       state.numNodesFetched = 0
@@ -114,22 +107,7 @@ export default new Vuex.Store({
   actions: {
     setupResultsData ({ commit }, { url }) {
       return new Promise((resolve) => {
-        commit('setIsLoading', true)
         commit('resetResultsData')
-        commit('setRequestedUrl', url)
-        commit('setIsLoading', false)
-        resolve()
-      })
-    },
-    resetResultsData ({ commit }) {
-      return new Promise((resolve) => {
-        commit('resetResultsData')
-        resolve()
-      })
-    },
-    saveQueue ({ commit }, { eventKeys, requestId }) {
-      return new Promise((resolve) => {
-        commit('setQueue', { eventKeys, requestId })
         resolve()
       })
     },
