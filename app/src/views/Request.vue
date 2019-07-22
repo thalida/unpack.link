@@ -1,14 +1,12 @@
 <template>
  <div class="request" v-if="!isLoading">
     <UrlInput :url="requestedUrl" />
-    <p class="request__stats">
-      <span class="request__stats__number">{{numLinksFetched}} links</span>
-      across
-      <span class="request__stats__number">{{numNodesQueued}} sites</span>
-    </p>
     <Node
-      :node-uuid="requestedUUID"
-      :node-url="requestedUrl" />
+      :node-uuid="originNodeUUID"
+      :node-url="originNodeUrl" />
+    <p class="request__stats">
+      found <span class="request__stats__number">{{nodeStats.queued}}</span> sites
+    </p>
     <Level
       v-for="(links, level) in linksByLevel"
       :key="level"
@@ -36,7 +34,8 @@ export default {
       isLoading: true,
       socket: null,
       queue: null,
-      requestedUUID: null,
+      originNodeUUID: null,
+      originNodeUrl: null,
       requestStatus: null,
     }
   },
@@ -48,12 +47,9 @@ export default {
       apiHost: 'apiHost',
       settings: 'settings',
       nodes: 'nodes',
+      nodeStats: 'nodeStats',
       links: 'links',
       linksByLevel: 'linksByLevel',
-      numNodesQueued: 'numNodesQueued',
-      numNodesInProgress: 'numNodesInProgress',
-      numLinksFetched: 'numLinksFetched',
-      numNodesFetched: 'numNodesFetched',
     }),
   },
 
@@ -85,34 +81,43 @@ export default {
           this.queue = Object.assign({}, {
             eventKeys: response.data.event_keys,
             requestId: response.data.request_id,
+            node_uuid: response.data.node_uuid,
+            node_url: response.data.node_url,
+          })
+
+          this.originNodeUUID = this.queue.node_uuid
+          this.originNodeUrl = this.queue.node_url
+
+          this.$store.dispatch('setNodeWithStatus', {
+            node_uuid: this.queue.node_uuid,
+            node_url: this.queue.node_url,
+            status: 'queued'
           })
 
           this.startListening()
           this.startQueue()
-
-          this.$store.dispatch('addOneTo', 'numNodesQueued')
         })
     },
 
     startListening () {
+      // console.log(`Listening on queue namespace: /${this.queue.requestId}`)
       const requestId = this.queue.requestId
       this.socket = io(`0.0.0.0:5000/${requestId}`)
       this.requestStatus = 'listening'
-      // console.log(`Listening on queue namespace: /${requestId}`)
 
       this.socket.on(this.queue.eventKeys['REQUEST:QUEUED'], (res) => {
-        this.requestStatus = 'queued'
         // console.log('REQUEST:QUEUED', res)
+        this.requestStatus = 'queued'
       })
 
       this.socket.on(this.queue.eventKeys['REQUEST:IN_PROGRESS'], (res) => {
-        this.requestStatus = 'in_progress'
         // console.log('REQUEST:IN_PROGRESS', res)
+        this.requestStatus = 'running'
       })
 
       this.socket.on(this.queue.eventKeys['REQUEST:COMPLETED'], (res) => {
-        this.requestStatus = 'completed'
         // console.log('REQUEST:COMPLETED', res)
+        this.requestStatus = 'completed'
       })
 
       // this.socket.on(this.queue.eventKeys['REQUEST:HEARTBEAT'], (res) => {
@@ -120,30 +125,36 @@ export default {
       // })
 
       this.socket.on(this.queue.eventKeys['NODE:QUEUED'], (res) => {
-        this.$store.dispatch('addOneTo', 'numNodesQueued')
         // console.log('NODE:QUEUED', res)
+        let node = res
+        node.status = 'queued'
+        this.$store.dispatch('setNodeWithStatus', node)
       })
 
       this.socket.on(this.queue.eventKeys['NODE:IN_PROGRESS'], (res) => {
-        this.$store.dispatch('addOneTo', 'numNodesInProgress')
         // console.log('NODE:IN_PROGRESS', res)
+        let node = res
+        node.status = 'running'
+        this.$store.dispatch('setNodeWithStatus', node)
       })
 
       this.socket.on(this.queue.eventKeys['NODE:COMPLETED'], (res) => {
-        this.$store.dispatch('addNode', res)
         // console.log('NODE:COMPLETED', res)
+        let node = res
+        node.status = 'fetched'
+        this.$store.dispatch('setNodeWithStatus', node)
       })
 
       this.socket.on(this.queue.eventKeys['LINK:COMPLETED'], (res) => {
+        console.log('LINK:COMPLETED', res)
         this.$store.dispatch('addLink', res)
-        // console.log('LINK:COMPLETED', res)
       })
     },
 
     startQueue () {
+      // console.log(`Starting queue: ${this.queue.requestId}`)
       const requestId = this.queue.requestId
       const path = `${this.apiHost}/api/queue/${requestId}/start`
-      // console.log(`Starting queue: ${requestId}`)
       return axios.post(path)
     },
 
@@ -165,9 +176,9 @@ export default {
         return
       }
 
+      // console.log(`Stopping queue: ${this.queue.requestId}`)
       const requestId = this.queue.requestId
       const path = `${this.apiHost}/api/queue/${requestId}/stop`
-      // console.log(`Stopping queue: ${requestId}`)
       return axios.post(path)
     },
   },

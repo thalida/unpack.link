@@ -55,6 +55,8 @@ def queue_create():
         connection.close()
 
         return jsonify({
+            'node_url': node_url,
+            'node_uuid': node_uuid,
             'request_id': request_id,
             'event_keys': event_keys,
         })

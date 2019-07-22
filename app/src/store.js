@@ -10,12 +10,10 @@ export default new Vuex.Store({
   state: {
     apiHost: (isDevelopment) ? `http://${window.location.hostname}:5000` : '',
     nodes: {},
+    nodeStatusOptions: ['queued', 'running', 'fetched'],
+    nodeStats: {},
     links: {},
     linksByLevel: [],
-    numNodesQueued: 0,
-    numNodesInProgress: 0,
-    numNodesFetched: 0,
-    numLinksFetched: 0,
     settings: {
       rules: {
         max_link_depth: 1,
@@ -48,14 +46,24 @@ export default new Vuex.Store({
     },
   },
   mutations: {
-    addNode (state, node) {
+    setNode (state, node) {
+      Vue.set(state.nodes, node.node_uuid, node)
+    },
+    setNodeStatus (state, node) {
       const nodeUUID = node.node_uuid
-      if (nodeUUID in state.nodes) {
+      const status = node.status
+      if (
+        !(nodeUUID in state.nodes) ||
+        state.nodeStatusOptions.indexOf(status) < 0
+      ) {
         return
       }
 
-      Vue.set(state.nodes, nodeUUID, node)
-      state.numNodesFetched += 1
+      state.nodes[nodeUUID].status = status
+      Vue.set(state.nodes, nodeUUID, state.nodes[nodeUUID])
+
+      const statusCounts = (typeof state.nodeStats[status] === 'undefined') ? 1 : state.nodeStats[status] + 1
+      Vue.set(state.nodeStats, status, statusCounts)
     },
     addLink (state, link) {
       const linkID = `${link.source_node_uuid}:${link.target_node_uuid}`
@@ -90,18 +98,11 @@ export default new Vuex.Store({
       // Yas! We've added a new link!
       state.numLinksFetched = Object.keys(state.links).length
     },
-    add (state, { stateVar, n }) {
-      n = n || 1
-      state[stateVar] += n
-    },
     resetResultsData (state) {
       state.nodes = {}
       state.links = {}
       state.linksByLevel = []
-      state.numNodesQueued = 0
-      state.numNodesInProgress = 0
-      state.numNodesFetched = 0
-      state.numLinksFetched = 0
+      state.nodeStats = {}
     },
   },
   actions: {
@@ -111,14 +112,15 @@ export default new Vuex.Store({
         resolve()
       })
     },
-    addNode ({ commit }, node) {
-      commit('addNode', node)
+    setNodeWithStatus ({ commit }, node) {
+      commit('setNode', node)
+      commit('setNodeStatus', {
+        node_uuid: node.node_uuid,
+        status: node.status,
+      })
     },
     addLink ({ commit }, link) {
       commit('addLink', link)
-    },
-    addOneTo ({ commit }, stateVar) {
-      commit('add', { stateVar, n: 1 })
     },
   },
 })

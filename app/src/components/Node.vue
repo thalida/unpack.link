@@ -89,12 +89,6 @@ export default {
     node () {
       return this.$store.getters.getNodeByUUID(this.nodeUuid)
     },
-    nodeType () {
-      if (typeof this.node === 'undefined') {
-        return null
-      }
-      return this.node.node_details.node_type
-    },
     nodeHasDetails () {
       const hasDetails = (
         typeof this.node !== 'undefined' &&
@@ -110,6 +104,12 @@ export default {
       }
 
       return true
+    },
+    nodeType () {
+      if (!this.nodeHasDetails) {
+        return null
+      }
+      return this.node.node_details.node_type
     },
     twitterData () {
       if (this.nodeType !== 'twitter' || !this.nodeHasDetails) {
