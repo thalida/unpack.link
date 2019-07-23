@@ -12,7 +12,6 @@ export default new Vuex.Store({
     nodeStatusOptions: ['found', 'queued', 'running', 'fetched'],
     nodeStats: {},
     nodes: {},
-    nodesByLevel: [],
     links: {},
     settings: {
       rules: {
@@ -23,6 +22,23 @@ export default new Vuex.Store({
     },
   },
   getters: {
+    getNodesByMinLevel: (state) => {
+      const nodeUUIDs = Object.keys(state.nodes)
+
+      if (nodeUUIDs.length <= 0) {
+        return
+      }
+
+      const nodesByMinLevel = nodeUUIDs.reduce((outputArr, nodeUUID) => {
+        const levels = state.nodes[nodeUUID].levels
+        const minLevel = Math.min(...levels)
+
+        outputArr[minLevel] = outputArr[minLevel] || []
+        outputArr[minLevel].push(nodeUUID)
+        return outputArr
+      }, [])
+      return nodesByMinLevel
+    },
     getNodeByUUID: (state) => (nodeUUID) => {
       return state.nodes[nodeUUID]
     },
@@ -80,40 +96,28 @@ export default new Vuex.Store({
       // Yas! We've added a new link!
       state.numLinksFetched = Object.keys(state.links).length
     },
-    addNodeToLevel (state, { node, level }) {
-      const nodeUUID = node.node_uuid
+    // eslint-disable-next-line camelcase
+    addNodeLevel (state, { node_uuid, level }) {
+      // eslint-disable-next-line camelcase
+      const nodeUUID = node_uuid
 
       if (!(nodeUUID in state.nodes)) {
         return
       }
 
-      // Get the current level and check if the new level is farther away
-      // (ex. level 1 is closer than level 5)
-      const currLevel = state.nodes[nodeUUID].level
-      if (typeof currLevel !== 'undefined' && level >= currLevel) {
+      let node = state.nodes[nodeUUID]
+
+      if (node.levels && node.levels.includes(level)) {
         return
       }
 
-      // The new level is closer, so let's remove the old link (we'll add it back in later)
-      if (typeof state.nodesByLevel[currLevel] !== 'undefined') {
-        state.nodesByLevel[currLevel] = state.nodesByLevel[currLevel].filter((value) => value !== nodeUUID)
-      }
-
-      // Setup a new level collection if one doesn't exist yet
-      if (typeof state.nodesByLevel[level] === 'undefined') {
-        state.nodesByLevel[level] = []
-      }
-
-      // Add this link (by id) to the new level
-      const nodeWithLevel = Object.assign({}, state.nodes[nodeUUID], { level })
-      state.nodesByLevel[level].push(nodeUUID)
-      Vue.set(state.nodesByLevel, level, state.nodesByLevel[level])
-      Vue.set(state.nodes, nodeUUID, nodeWithLevel)
+      node.levels = node.levels || []
+      node.levels.push(level)
+      Vue.set(state.nodes, nodeUUID, node)
     },
     resetResultsData (state) {
       state.nodes = {}
       state.links = {}
-      state.nodesByLevel = []
       state.nodeStats = {}
     },
   },

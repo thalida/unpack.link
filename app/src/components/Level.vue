@@ -26,8 +26,6 @@ export default {
     }
   },
   components: { Node },
-  computed: {},
-  methods: {},
 }
 </script>
 

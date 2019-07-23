@@ -64,7 +64,9 @@ class ContentTypeTwitter(ContentTypeWebsite):
 
         except twython.exceptions.TwythonError as e:
             node_details = cls.setup_node_details(
-                node_data=str(e), is_error=True)
+                node_data=str(e),
+                is_error=True,
+            )
             links = []
 
         finally:

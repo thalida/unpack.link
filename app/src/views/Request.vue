@@ -6,11 +6,11 @@
       :node-uuid="request.node.node_uuid"
       :render-links="renderLinks"
       />
-    <p class="request__stats">
-      found <span class="request__stats__number">{{nodeStats.queued}}</span> sites
+    <p v-show="nodeStats.queued && nodeStats.queued >= 0" class="request__stats">
+      Found <span class="request__stats__number">{{nodeStats.queued}}</span> links starting from <a :href="requestedUrl" target="_blank">{{requestedUrl}}</a>
     </p>
     <Level
-      v-for="(nodes, level) in nodesByLevel"
+      v-for="(nodes, level) in nodesByMinLevel"
       :key="level"
       :level="level"
       :nodes="nodes"
@@ -49,13 +49,15 @@ export default {
     requestedUrl () {
       return this.url
     },
+    nodesByMinLevel () {
+      return this.$store.getters.getNodesByMinLevel
+    },
     ...mapState({
       apiHost: 'apiHost',
       settings: 'settings',
       nodes: 'nodes',
       nodeStats: 'nodeStats',
       links: 'links',
-      nodesByLevel: 'nodesByLevel',
     }),
   },
 
@@ -97,8 +99,8 @@ export default {
             status: 'queued',
           })
 
-          this.$store.commit('addNodeToLevel', {
-            node: this.request.node,
+          this.$store.commit('addNodeLevel', {
+            node_uuid: this.request.node.node_uuid,
             level: 0
           })
 
@@ -169,8 +171,8 @@ export default {
         this.$store.commit('addLink', link)
         this.$store.commit('updateNode', sourceNode)
         this.$store.commit('updateNode', targetNode)
-        this.$store.commit('addNodeToLevel', {
-          node: targetNode,
+        this.$store.commit('addNodeLevel', {
+          node_uuid: targetNode.node_uuid,
           level: link.level
         })
       })

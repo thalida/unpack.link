@@ -23,4 +23,13 @@ h2 {
   margin: 0;
   padding: 0;
 }
+a {
+  padding: 4px;
+  color: #fff;
+    transition: all 150ms ease;
+  &:hover {
+    background: white;
+    color: #000;
+  }
+}
 </style>
