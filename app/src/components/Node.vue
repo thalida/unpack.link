@@ -1,12 +1,19 @@
 <template>
     <div class="node">
-      <!-- Twitter -->
+      <Links
+        v-if="renderLinks"
+        direction="inbound"
+        :node-uuid="nodeUuid" />
+
       <div
-        v-if="nodeType === 'twitter'"
-        class="node__wrapper">
-        <!-- Has tweet data -->
+        class="node__wrapper"
+        v-on:click="handleClick"
+        v-on:keyup.enter="handleClick"
+        tabindex="0">
+
+        <!-- TWEETS -->
         <div
-          v-if="twitterData !== null"
+          v-if="nodeType === 'twitter' && twitterData !== null"
           class="node__contents node__contents--twitter">
           <Tweet
             :id="twitterData.id_str"
@@ -17,35 +24,18 @@
             }" />
           <p class="node__url node__url--tiny">{{nodeUrl}}</p>
         </div>
-        <!-- Does NOT have tweet data -->
+
+        <!-- MEDIA (IMAGES, GIFS, ETC) -->
         <div
-          v-else
-          class="node__contents node__contents--twitter">
-          <p class="node__url node__url--title">{{nodeUrl}}</p>
+          v-else-if="nodeType === 'media'"
+          class="node__contents node__contents--media">
+          <img :src="nodeUrl" class="node__img-embed" />
+          <p class="node__url node__url--tiny">{{nodeUrl}}</p>
         </div>
-      </div>
 
-      <!-- Media/Image -->
-      <div
-        v-else-if="nodeType === 'media'"
-        class="node__contents node__contents--media"
-        v-on:click="handleClick"
-        v-on:keyup.enter="handleClick"
-        tabindex="0">
-        <img :src="nodeUrl" class="node__img-embed" />
-        <p class="node__url node__url--tiny">{{nodeUrl}}</p>
-      </div>
-
-      <!-- Website -->
-      <div
-        v-else
-        class="node__wrapper"
-        v-on:click="handleClick"
-        v-on:keyup.enter="handleClick"
-        tabindex="0">
-        <!-- Has meta data -->
+        <!-- WEBSITE -->
         <div
-          v-if="websiteMeta !== null"
+          v-else-if="nodeType === 'website' && websiteMeta !== null"
           class="node__contents node__contents--website">
           <img
             v-if="websiteMeta.favicon"
@@ -66,28 +56,38 @@
             <p class="node__url node__url--tiny">{{nodeUrl}}</p>
           </div>
         </div>
-        <!-- Does NOT have meta data -->
+
+        <!-- GENERIC: Just show the url if we don't have any data -->
         <div
           v-else
-          class="node__contents node__contents--website">
+          class="node__contents node__contents--generic">
           <p class="node__url node__url--title">{{nodeUrl}}</p>
         </div>
       </div>
+
+      <Links
+        v-if="renderLinks"
+        direction="outbound"
+        :node-uuid="nodeUuid" />
     </div>
 </template>
 
 <script>
 import { Tweet } from 'vue-tweet-embed'
+import Links from '@/components/Links.vue'
 export default {
   name: 'Node',
   props: {
     'nodeUuid': String,
-    'nodeUrl': String,
+    'renderLinks': Boolean,
   },
-  components: { Tweet },
+  components: { Tweet, Links },
   computed: {
     node () {
       return this.$store.getters.getNodeByUUID(this.nodeUuid)
+    },
+    nodeUrl () {
+      return (this.node) ? this.node.node_url : null
     },
     nodeHasDetails () {
       const hasDetails = (
@@ -140,6 +140,10 @@ export default {
   },
   methods: {
     handleClick () {
+      if (this.nodeType === 'twitter' && this.twitterData !== null) {
+        return
+      }
+
       window.open(this.nodeUrl, '_blank')
     }
   },
@@ -149,11 +153,14 @@ export default {
 <style lang="scss">
 .node {
   display: flex;
-  flex: 0 0 auto;
+  flex-direction: row;
+  align-items: center;
   width: 100%;
+  margin: 30px -8px;
 
   &__wrapper {
     width: 100%;
+    flex: 0 0 auto;
   }
 
   &__contents {

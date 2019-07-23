@@ -32,7 +32,7 @@
 
 <script>
 export default {
-  name: 'RequestForm',
+  name: 'UrlForm',
   props: {
     'url': String,
     'theme': String,

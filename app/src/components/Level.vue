@@ -1,25 +1,31 @@
 <template>
-    <div v-if="links" class="level">
+    <div v-if="level !== 0 && nodes" class="level">
       <h2 class="level__header">
         {{level}}° <span v-if="level === 1">away</span>
       </h2>
-      <Link
-        v-for="(linkId, index) in links"
+      <Node
+        v-for="(nodeUUID, index) in nodes"
         :key="index"
-        :link-id="linkId"
+        :node-uuid="nodeUUID"
+        :render-links="renderLinks"
       />
     </div>
 </template>
 
 <script>
-import Link from '@/components/Link.vue'
+import Node from '@/components/Node.vue'
 export default {
   name: 'Level',
   props: {
     'level': Number,
-    'links': Array,
+    'nodes': Array,
   },
-  components: { Link },
+  data () {
+    return {
+      renderLinks: true,
+    }
+  },
+  components: { Node },
   computed: {},
   methods: {},
 }

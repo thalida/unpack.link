@@ -9,11 +9,11 @@ export default new Vuex.Store({
   strict: isDevelopment,
   state: {
     apiHost: (isDevelopment) ? `http://${window.location.hostname}:5000` : '',
-    nodes: {},
-    nodeStatusOptions: ['queued', 'running', 'fetched'],
+    nodeStatusOptions: ['found', 'queued', 'running', 'fetched'],
     nodeStats: {},
+    nodes: {},
+    nodesByLevel: [],
     links: {},
-    linksByLevel: [],
     settings: {
       rules: {
         max_link_depth: 1,
@@ -46,81 +46,76 @@ export default new Vuex.Store({
     },
   },
   mutations: {
-    setNode (state, node) {
-      Vue.set(state.nodes, node.node_uuid, node)
-    },
-    setNodeStatus (state, node) {
+    updateNode (state, node) {
       const nodeUUID = node.node_uuid
       const status = node.status
-      if (
-        !(nodeUUID in state.nodes) ||
-        state.nodeStatusOptions.indexOf(status) < 0
-      ) {
+
+      if (status && state.nodeStatusOptions.indexOf(status) < 0) {
         return
       }
 
-      state.nodes[nodeUUID].status = status
-      Vue.set(state.nodes, nodeUUID, state.nodes[nodeUUID])
+      let shouldUpdateStatusCounts = false
+      if (nodeUUID in state.nodes) {
+        const currStatus = state.nodes[nodeUUID].status
+        shouldUpdateStatusCounts = status && (currStatus !== status)
+        node = Object.assign({}, state.nodes[nodeUUID], node)
+      }
 
-      const statusCounts = (typeof state.nodeStats[status] === 'undefined') ? 1 : state.nodeStats[status] + 1
-      Vue.set(state.nodeStats, status, statusCounts)
+      if (shouldUpdateStatusCounts) {
+        const statusCounts = (typeof state.nodeStats[status] === 'undefined') ? 1 : state.nodeStats[status] + 1
+        Vue.set(state.nodeStats, status, statusCounts)
+      }
+
+      Vue.set(state.nodes, nodeUUID, node)
     },
     addLink (state, link) {
       const linkID = `${link.source_node_uuid}:${link.target_node_uuid}`
-      const newLevel = link.level
-
-      // If the link already exists
       if (linkID in state.links) {
-        // Get the current level and check if the new level is farther away
-        // (ex. level 1 is closer than level 5)
-        const currLevel = state.links[linkID].level
-        if (newLevel >= currLevel) {
-          return
-        }
-
-        // The new level is closer, so let's remove the old link (we'll add it back in later)
-        state.linksByLevel[currLevel] = state.linksByLevel[currLevel].filter((value) => value !== linkID)
-        Vue.delete(state.links, linkID)
+        return
       }
 
       // Add the link to the collection of all links
       Vue.set(state.links, linkID, link)
 
+      // Yas! We've added a new link!
+      state.numLinksFetched = Object.keys(state.links).length
+    },
+    addNodeToLevel (state, { node, level }) {
+      const nodeUUID = node.node_uuid
+
+      if (!(nodeUUID in state.nodes)) {
+        return
+      }
+
+      // Get the current level and check if the new level is farther away
+      // (ex. level 1 is closer than level 5)
+      const currLevel = state.nodes[nodeUUID].level
+      if (typeof currLevel !== 'undefined' && level >= currLevel) {
+        return
+      }
+
+      // The new level is closer, so let's remove the old link (we'll add it back in later)
+      if (typeof state.nodesByLevel[currLevel] !== 'undefined') {
+        state.nodesByLevel[currLevel] = state.nodesByLevel[currLevel].filter((value) => value !== nodeUUID)
+      }
+
       // Setup a new level collection if one doesn't exist yet
-      if (typeof state.linksByLevel[newLevel] === 'undefined') {
-        state.linksByLevel[newLevel] = []
+      if (typeof state.nodesByLevel[level] === 'undefined') {
+        state.nodesByLevel[level] = []
       }
 
       // Add this link (by id) to the new level
-      state.linksByLevel[newLevel].push(linkID)
-      Vue.set(state.linksByLevel, newLevel, state.linksByLevel[newLevel])
-
-      // Yas! We've added a new link!
-      state.numLinksFetched = Object.keys(state.links).length
+      const nodeWithLevel = Object.assign({}, state.nodes[nodeUUID], { level })
+      state.nodesByLevel[level].push(nodeUUID)
+      Vue.set(state.nodesByLevel, level, state.nodesByLevel[level])
+      Vue.set(state.nodes, nodeUUID, nodeWithLevel)
     },
     resetResultsData (state) {
       state.nodes = {}
       state.links = {}
-      state.linksByLevel = []
+      state.nodesByLevel = []
       state.nodeStats = {}
     },
   },
-  actions: {
-    setupResultsData ({ commit }, { url }) {
-      return new Promise((resolve) => {
-        commit('resetResultsData')
-        resolve()
-      })
-    },
-    setNodeWithStatus ({ commit }, node) {
-      commit('setNode', node)
-      commit('setNodeStatus', {
-        node_uuid: node.node_uuid,
-        status: node.status,
-      })
-    },
-    addLink ({ commit }, link) {
-      commit('addLink', link)
-    },
-  },
+  actions: {},
 })

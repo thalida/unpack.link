@@ -1,17 +1,19 @@
 <template>
  <div class="request" v-if="!isLoading">
-    <UrlInput :url="requestedUrl" />
+    <UrlForm :url="requestedUrl" />
     <Node
-      :node-uuid="originNodeUUID"
-      :node-url="originNodeUrl" />
+      v-if="request.node.node_uuid"
+      :node-uuid="request.node.node_uuid"
+      :render-links="renderLinks"
+      />
     <p class="request__stats">
       found <span class="request__stats__number">{{nodeStats.queued}}</span> sites
     </p>
     <Level
-      v-for="(links, level) in linksByLevel"
+      v-for="(nodes, level) in nodesByLevel"
       :key="level"
       :level="level"
-      :links="links"
+      :nodes="nodes"
       />
   </div>
 </template>
@@ -21,22 +23,26 @@ import { mapState } from 'vuex'
 import axios from 'axios'
 import io from 'socket.io-client'
 
-import UrlInput from '@/components/UrlInput.vue'
+import UrlForm from '@/components/UrlForm.vue'
 import Node from '@/components/Node.vue'
 import Level from '@/components/Level.vue'
 
 export default {
   name: 'request',
   props: ['url'],
-  components: { UrlInput, Node, Level },
+  components: { UrlForm, Node, Level },
   data: () => {
     return {
       isLoading: true,
       socket: null,
-      queue: null,
-      originNodeUUID: null,
-      originNodeUrl: null,
-      requestStatus: null,
+      request: {
+        node: {
+          node_uuid: null,
+          node_url: null,
+        },
+        status: null,
+      },
+      renderLinks: true,
     }
   },
   computed: {
@@ -49,18 +55,15 @@ export default {
       nodes: 'nodes',
       nodeStats: 'nodeStats',
       links: 'links',
-      linksByLevel: 'linksByLevel',
+      nodesByLevel: 'nodesByLevel',
     }),
   },
 
   created () {
-    this.$store
-      .dispatch('setupResultsData', { url: this.requestedUrl })
-      .then(() => {
-        this.createQueue()
-        window.addEventListener('unload', this.breakdown)
-        this.isLoading = false
-      })
+    this.$store.commit('resetResultsData')
+    this.createQueue()
+    window.addEventListener('unload', this.breakdown)
+    this.isLoading = false
   },
 
   beforeDestroy () {
@@ -78,20 +81,25 @@ export default {
       return axios
         .post(path, params)
         .then((response) => {
-          this.queue = Object.assign({}, {
+          this.request = Object.assign({}, {
             eventKeys: response.data.event_keys,
             requestId: response.data.request_id,
-            node_uuid: response.data.node_uuid,
-            node_url: response.data.node_url,
+            node: {
+              node_uuid: response.data.node_uuid,
+              node_url: response.data.node_url,
+            }
           })
 
-          this.originNodeUUID = this.queue.node_uuid
-          this.originNodeUrl = this.queue.node_url
+          this.$store.commit('updateNode', {
+            node_uuid: this.request.node.node_uuid,
+            node_url: this.request.node.node_url,
+            node_type: 'origin',
+            status: 'queued',
+          })
 
-          this.$store.dispatch('setNodeWithStatus', {
-            node_uuid: this.queue.node_uuid,
-            node_url: this.queue.node_url,
-            status: 'queued'
+          this.$store.commit('addNodeToLevel', {
+            node: this.request.node,
+            level: 0
           })
 
           this.startListening()
@@ -100,60 +108,77 @@ export default {
     },
 
     startListening () {
-      // console.log(`Listening on queue namespace: /${this.queue.requestId}`)
-      const requestId = this.queue.requestId
+      // console.log(`Listening on queue namespace: /${this.request.requestId}`)
+      const requestId = this.request.requestId
       this.socket = io(`0.0.0.0:5000/${requestId}`)
-      this.requestStatus = 'listening'
+      this.request.status = 'listening'
 
-      this.socket.on(this.queue.eventKeys['REQUEST:QUEUED'], (res) => {
+      this.socket.on(this.request.eventKeys['REQUEST:QUEUED'], (res) => {
         // console.log('REQUEST:QUEUED', res)
-        this.requestStatus = 'queued'
+        this.request.status = 'queued'
       })
 
-      this.socket.on(this.queue.eventKeys['REQUEST:IN_PROGRESS'], (res) => {
+      this.socket.on(this.request.eventKeys['REQUEST:IN_PROGRESS'], (res) => {
         // console.log('REQUEST:IN_PROGRESS', res)
-        this.requestStatus = 'running'
+        this.request.status = 'running'
       })
 
-      this.socket.on(this.queue.eventKeys['REQUEST:COMPLETED'], (res) => {
+      this.socket.on(this.request.eventKeys['REQUEST:COMPLETED'], (res) => {
         // console.log('REQUEST:COMPLETED', res)
-        this.requestStatus = 'completed'
+        this.request.status = 'completed'
       })
 
-      // this.socket.on(this.queue.eventKeys['REQUEST:HEARTBEAT'], (res) => {
+      // this.socket.on(this.request.eventKeys['REQUEST:HEARTBEAT'], (res) => {
       //   console.log('REQUEST:HEARTBEAT', res)
       // })
 
-      this.socket.on(this.queue.eventKeys['NODE:QUEUED'], (res) => {
+      this.socket.on(this.request.eventKeys['NODE:QUEUED'], (res) => {
         // console.log('NODE:QUEUED', res)
         let node = res
         node.status = 'queued'
-        this.$store.dispatch('setNodeWithStatus', node)
+        this.$store.commit('updateNode', node)
       })
 
-      this.socket.on(this.queue.eventKeys['NODE:IN_PROGRESS'], (res) => {
+      this.socket.on(this.request.eventKeys['NODE:IN_PROGRESS'], (res) => {
         // console.log('NODE:IN_PROGRESS', res)
         let node = res
         node.status = 'running'
-        this.$store.dispatch('setNodeWithStatus', node)
+        this.$store.commit('updateNode', node)
       })
 
-      this.socket.on(this.queue.eventKeys['NODE:COMPLETED'], (res) => {
+      this.socket.on(this.request.eventKeys['NODE:COMPLETED'], (res) => {
         // console.log('NODE:COMPLETED', res)
         let node = res
         node.status = 'fetched'
-        this.$store.dispatch('setNodeWithStatus', node)
+        this.$store.commit('updateNode', node)
       })
 
-      this.socket.on(this.queue.eventKeys['LINK:COMPLETED'], (res) => {
-        console.log('LINK:COMPLETED', res)
-        this.$store.dispatch('addLink', res)
+      this.socket.on(this.request.eventKeys['LINK:COMPLETED'], (res) => {
+        // console.log('LINK:COMPLETED', res)
+
+        const link = res
+        const sourceNode = {
+          node_uuid: res.source_node_uuid,
+          node_url: res.source_node_url,
+        }
+        const targetNode = {
+          node_uuid: res.target_node_uuid,
+          node_url: res.target_node_url,
+        }
+
+        this.$store.commit('addLink', link)
+        this.$store.commit('updateNode', sourceNode)
+        this.$store.commit('updateNode', targetNode)
+        this.$store.commit('addNodeToLevel', {
+          node: targetNode,
+          level: link.level
+        })
       })
     },
 
     startQueue () {
-      // console.log(`Starting queue: ${this.queue.requestId}`)
-      const requestId = this.queue.requestId
+      // console.log(`Starting queue: ${this.request.requestId}`)
+      const requestId = this.request.requestId
       const path = `${this.apiHost}/api/queue/${requestId}/start`
       return axios.post(path)
     },
@@ -168,16 +193,16 @@ export default {
 
     stopQueue () {
       if (
-        typeof this.queue === 'undefined' ||
-        this.queue === null ||
-        typeof this.queue.requestId === 'undefined' ||
-        this.queue.requestId === null
+        typeof this.request === 'undefined' ||
+        this.request === null ||
+        typeof this.request.requestId === 'undefined' ||
+        this.request.requestId === null
       ) {
         return
       }
 
-      // console.log(`Stopping queue: ${this.queue.requestId}`)
-      const requestId = this.queue.requestId
+      // console.log(`Stopping queue: ${this.request.requestId}`)
+      const requestId = this.request.requestId
       const path = `${this.apiHost}/api/queue/${requestId}/stop`
       return axios.post(path)
     },

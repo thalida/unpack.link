@@ -1,15 +1,15 @@
 <template>
   <div class="home">
-    <UrlInput :url="url" theme="fancy" />
+    <UrlForm :url="url" theme="fancy" />
   </div>
 </template>
 
 <script>
-import UrlInput from '@/components/UrlInput.vue'
+import UrlForm from '@/components/UrlForm.vue'
 
 export default {
   name: 'home',
-  components: { UrlInput },
+  components: { UrlForm },
   data: () => {
     return {
       'url': null,
