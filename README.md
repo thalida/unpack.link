@@ -1,17 +1,14 @@
 # unpack.link
 
 ## Starting Services
-Run `docker-compose up --build`
-Run `npm run serve`
-Check that it's running with `docker ps`
+- Run `docker-compose up --build`
+- Run `npm run serve`
+- Check that it's running with `docker ps`
 
-
-## Touch
-- /tmp/unpack_api-server_logs.log
-- /tmp/unpack_queue-manager_logs.log
-- /tmp/unpack_queue-fetcher-worker_logs.log
-- /tmp/unpack_queue-broadcast-worker_logs.log
-
+## Local Dashboards and Visuals
+- website: http://localhost:8080/
+- rabbitmq: http://localhost:15672/
+- logs: http://localhost:5601/
 
 ## Examples
 ### Twitter
