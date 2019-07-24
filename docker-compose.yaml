@@ -39,4 +39,14 @@ services:
       - /Users/thalida/Repos/unpack.link/unpack:/unpack
       - /Users/thalida/Repos/unpack.link/controller.py:/controller.py
       - /var/run/docker.sock:/var/run/docker.sock
-      - /tmp/unpack_api_logs.log:/tmp/unpack_logs.log
+
+  elk:
+    image: sebp/elk:701
+    restart: always
+    ports:
+      - 5959:5959
+      - 5601:5601
+    volumes:
+      - /Users/thalida/Repos/unpack.link/elk/elasticsearch:/var/lib/elasticsearch
+      - /Users/thalida/Repos/unpack.link/elk/logstash:/etc/logstash/conf.d
+      - /Users/thalida/Repos/unpack.link/elk/archive:/archive

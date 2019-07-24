@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "999e1a97da3e64d8332751830e594fcd8b996e009a65238a59a88910d90b3169"
+            "sha256": "071fe734a4e3eae5eec4086ef1ad453de539ae6cc5d4f0121e46c546a81bd752"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -104,11 +104,11 @@
         },
         "flask": {
             "hashes": [
-                "sha256:a31adc27de06034c657a8dc091cc5fcb0227f2474798409bff0e9674de31a026",
-                "sha256:b5ae63812021cb04174fcff05d560a98387a44d9cccd4652a2bfa131ba4e4c9b"
+                "sha256:13f9f196f330c7c2c5d7a5cf91af894110ca0215ac051b5844701f2bfd934d52",
+                "sha256:45eb5a6fd193d6cf7e0cf5d8a5b31f83d5faae0293695626f539a823e93b13f6"
             ],
             "index": "pypi",
-            "version": "==1.1.0"
+            "version": "==1.1.1"
         },
         "flask-cors": {
             "hashes": [
@@ -178,6 +178,13 @@
             ],
             "index": "pypi",
             "version": "==4.6.3"
+        },
+        "limits": {
+            "hashes": [
+                "sha256:9df578f4161017d79f5188609f1d65f6b639f8aad2914c3960c9252e56a0ff95",
+                "sha256:a017b8d9e9da6761f4574642149c337f8f540d4edfe573fb91ad2c4001a2bc76"
+            ],
+            "version": "==1.3"
         },
         "lxml": {
             "hashes": [
@@ -265,11 +272,11 @@
         },
         "pika": {
             "hashes": [
-                "sha256:0c50285f00a8b4816f2c9a44469107d9e738ba3a90386f14b625d8cceef4f6ae",
-                "sha256:5ba83d3daffccb92788d24facdab62a3db6aa03b8a6d709b03dc792d35c0dfe8"
+                "sha256:4e1a1a6585a41b2341992ec32aadb7a919d649eb82904fd8e4a4e0871c8cf3af",
+                "sha256:9fa76ba4b65034b878b2b8de90ff8660a59d925b087c5bb88f8fdbb4b64a1dbf"
             ],
             "index": "pypi",
-            "version": "==1.0.1"
+            "version": "==1.1.0"
         },
         "psycopg2": {
             "hashes": [
@@ -295,12 +302,34 @@
             ],
             "version": "==1.8.0"
         },
+        "pylogbeat": {
+            "hashes": [
+                "sha256:11f3b1d04424151d406d8b844a8db6299442b4af1f10d5f622a6febf1ad5c41d",
+                "sha256:473494a0c798a560a8312ee662b333888181cf4db18cd8f87a8d7d1548beefd9"
+            ],
+            "version": "==1.0.2"
+        },
         "python-engineio": {
             "hashes": [
                 "sha256:4850c3e04b2040e4fd262d1047797473d1815b37a073807e7b80304c1c5f4848",
                 "sha256:89b90ee3816ed440c68ac7b6143244ae7d56a46a49295fbac8e6696482e596d1"
             ],
             "version": "==3.8.2.post1"
+        },
+        "python-logstash": {
+            "hashes": [
+                "sha256:10943e5df83f592b4d61b63ad1afff855ccc8c9467f78718f0a59809ba1fe68c"
+            ],
+            "index": "pypi",
+            "version": "==0.4.6"
+        },
+        "python-logstash-async": {
+            "hashes": [
+                "sha256:994894e8b7e168e56f21e302334c08203af102c7bc760cacdb8d3d0f5aa74cea",
+                "sha256:ccd528a0a9c6b7aabd9944c01d628e9d6cc2149156011aafd3484c7c0abbce45"
+            ],
+            "index": "pypi",
+            "version": "==1.5.1"
         },
         "python-socketio": {
             "hashes": [
@@ -384,10 +413,10 @@
         },
         "webdriver-manager": {
             "hashes": [
-                "sha256:92f01a5b0f6b71860f5093256d5f27e10e95fcaec9fb0cd4a8d4607fa06364ac"
+                "sha256:4e3f522f937fd6ab246d63ee06612287bc122b70bb6034266459de86953b8645"
             ],
             "index": "pypi",
-            "version": "==1.7"
+            "version": "==1.8.2"
         },
         "websocket-client": {
             "hashes": [
@@ -398,10 +427,10 @@
         },
         "werkzeug": {
             "hashes": [
-                "sha256:865856ebb55c4dcd0630cdd8f3331a1847a819dda7e8c750d3db6f2aa6c0209c",
-                "sha256:a0b915f0815982fb2a09161cb8f31708052d0951c3ba433ccc5e1aa276507ca6"
+                "sha256:87ae4e5b5366da2347eb3116c0e6c681a0e939a33b2805e2c0cbd282664932c4",
+                "sha256:a13b74dd3c45f758d4ebdb224be8f1ab8ef58b3c0ffc1783a8c7d9f4f50227e6"
             ],
-            "version": "==0.15.4"
+            "version": "==0.15.5"
         }
     },
     "develop": {

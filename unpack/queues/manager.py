@@ -1,3 +1,4 @@
+from ..log import *
 import os
 import pika
 import time
@@ -125,7 +126,10 @@ def main(request_id):
             container_name=UnpackHelpers.DOCKER_CONTAINER_NAMES['QUEUE_FETCHER_WORKER'],
             request_id=request_id,
         )
+        logger.info(f'created container: {fetcher_container}')
         containers.append(fetcher_container)
+
+    logger.info(f'created containers: {containers}')
 
     # As long as queue has data in it and the TTL has not been reached
     while True:

@@ -1,3 +1,4 @@
+from .log import *
 import os
 os.environ['TZ'] = 'UTC'
 
@@ -105,7 +106,6 @@ class UnpackHelpers:
         if container_settings.get('can_create_containers', False):
             volumes.update({
                 '/var/run/docker.sock': {'bind': '/var/run/docker.sock', 'mode': 'ro'},
-                f'/tmp/unpack_{action}_logs.log': {'bind': '/tmp/unpack_logs.log', 'mode': 'rw'},
             })
 
         if os.environ['UNPACK_DEV_ENV'] == 'TRUE':
@@ -268,7 +268,6 @@ class UnpackHelpers:
                 query,
                 query_args,
             )
-            res['data'] = json.loads(res['data'])
             return res
         except Exception:
             UnpackHelpers.raise_error('Unpack: Error fetching metadta for with node_uuid: {node_uuid}', node_uuid=node_uuid)
@@ -364,4 +363,4 @@ class UnpackHelpers:
     def raise_error(msg, **kwargs):
         msg = 'something bad happended:' if msg is None else msg
         msg = msg.format(**kwargs)
-        logger.exception(msg)
+        logger.exception(msg, extra=kwargs)

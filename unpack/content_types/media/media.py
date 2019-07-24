@@ -1,3 +1,10 @@
+from ...log import *
+import os
+os.environ['TZ'] = 'UTC'
+
+import logging
+logger = logging.getLogger(__name__)
+
 import re
 from ..website import ContentTypeWebsite
 

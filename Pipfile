@@ -18,6 +18,8 @@ flask-cors = "*"
 docker = "*"
 redis = "*"
 retry = "*"
+python-logstash = "*"
+python-logstash-async = "*"
 
 [dev-packages]
 snakeviz = "*"

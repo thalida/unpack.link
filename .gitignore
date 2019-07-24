@@ -102,6 +102,9 @@ venv.bak/
 # mkdocs documentation
 /site
 
+# elk logs
+elk/
+
 # mypy
 .mypy_cache/
 
