@@ -2,8 +2,8 @@
  <div class="request" v-if="!isLoading">
     <UrlForm :url="requestedUrl" />
     <Node
-      v-if="request.node.node_uuid"
-      :node-uuid="request.node.node_uuid"
+      v-if="request.originNodeUUID"
+      :node-uuid="request.originNodeUUID"
       :render-links="renderLinks"
       />
     <p v-show="nodeStats.queued && nodeStats.queued >= 0" class="request__stats">
@@ -36,10 +36,7 @@ export default {
       isLoading: true,
       socket: null,
       request: {
-        node: {
-          node_uuid: null,
-          node_url: null,
-        },
+        originNodeUUID: null,
         status: null,
       },
       renderLinks: true,
@@ -86,21 +83,18 @@ export default {
           this.request = Object.assign({}, {
             eventKeys: response.data.event_keys,
             requestId: response.data.request_id,
-            node: {
-              node_uuid: response.data.node_uuid,
-              node_url: response.data.node_url,
-            }
+            originNodeUUID: response.data.node_uuid,
           })
 
-          this.$store.commit('updateNode', {
-            node_uuid: this.request.node.node_uuid,
-            node_url: this.request.node.node_url,
+          const node = {
+            node_uuid: response.data.node_uuid,
+            node_url: response.data.node_url,
             node_type: 'origin',
             status: 'queued',
-          })
-
+          }
+          this.$store.commit('updateNode', node)
           this.$store.commit('addNodeLevel', {
-            node_uuid: this.request.node.node_uuid,
+            node_uuid: node.node_uuid,
             level: 0
           })
 

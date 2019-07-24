@@ -10,6 +10,13 @@ export default new Vuex.Store({
   state: {
     apiHost: (isDevelopment) ? `http://${window.location.hostname}:5000` : '',
     nodeStatusOptions: ['found', 'queued', 'running', 'fetched'],
+    defaultNode: {
+      node_uuid: null,
+      node_url: null,
+      node_details: null,
+      isSelected: false,
+      levels: [],
+    },
     nodeStats: {},
     nodes: {},
     links: {},
@@ -22,12 +29,22 @@ export default new Vuex.Store({
     },
   },
   getters: {
-    getNodesByMinLevel: (state) => {
+    getSelectedNodeUUIDs: (state) => {
+      const nodeUUIDs = Object.keys(state.nodes)
+      const selectedNodes = nodeUUIDs.filter((nodeUUID) => {
+        const node = state.nodes[nodeUUID]
+        return node.isSelected
+      })
+      return selectedNodes
+    },
+    getNodesByMinLevel: (state, getters) => {
       const nodeUUIDs = Object.keys(state.nodes)
 
       if (nodeUUIDs.length <= 0) {
         return
       }
+
+      console.log(getters.getSelectedNodeUUIDs)
 
       const nodesByMinLevel = nodeUUIDs.reduce((outputArr, nodeUUID) => {
         const levels = state.nodes[nodeUUID].levels
@@ -39,8 +56,17 @@ export default new Vuex.Store({
       }, [])
       return nodesByMinLevel
     },
-    getNodeByUUID: (state) => (nodeUUID) => {
-      return state.nodes[nodeUUID]
+    getNodeByUUID: (state) => (nodeUUID, useDefaultNode) => {
+      let foundNode = state.nodes[nodeUUID]
+
+      if (useDefaultNode && (
+        typeof foundNode === 'undefined' ||
+        foundNode === null
+      )) {
+        foundNode = Object.assign({}, state.defaultNode)
+      }
+
+      return foundNode
     },
     getLinksBySourceUUID: (state) => (findNodeUUID) => {
       const linkIds = Object.keys(state.links)
@@ -72,10 +98,13 @@ export default new Vuex.Store({
 
       let shouldUpdateStatusCounts = false
       if (nodeUUID in state.nodes) {
-        const currStatus = state.nodes[nodeUUID].status
-        shouldUpdateStatusCounts = status && (currStatus !== status)
+        const origStatus = state.nodes[nodeUUID].status
+        shouldUpdateStatusCounts = status && (origStatus !== status)
         node = Object.assign({}, state.nodes[nodeUUID], node)
       }
+
+      let defaultNodeClone = JSON.parse(JSON.stringify(state.defaultNode))
+      node = Object.assign({}, defaultNodeClone, node)
 
       if (shouldUpdateStatusCounts) {
         const statusCounts = (typeof state.nodeStats[status] === 'undefined') ? 1 : state.nodeStats[status] + 1
@@ -121,5 +150,4 @@ export default new Vuex.Store({
       state.nodeStats = {}
     },
   },
-  actions: {},
 })

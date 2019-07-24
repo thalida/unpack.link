@@ -1,74 +1,96 @@
 <template>
-    <div class="node">
-      <Links
-        v-if="renderLinks"
-        direction="inbound"
-        :node-uuid="nodeUuid" />
-
+    <div
+      class="node"
+      :class="[
+        (renderCheckmark) ? 'node--with-checkmark' : ''
+      ]">
       <div
-        class="node__wrapper"
-        v-on:click="handleClick"
-        v-on:keyup.enter="handleClick"
-        tabindex="0">
+        class="node__checkbox"
+        v-if="renderCheckmark">
+        <input
+          :id="checkboxID"
+          :name="checkboxID"
+          class="node__checkbox__input"
+          v-model="isSelected"
+          type="checkbox"
+          />
+        <label
+          class="node__checkbox__label"
+          :for="checkboxID">
+        </label>
+      </div>
 
-        <!-- TWEETS -->
-        <div
-          v-if="nodeType === 'twitter' && twitterData !== null"
-          class="node__contents node__contents--twitter">
-          <Tweet
-            :id="twitterData.id_str"
-            :options="{
-              theme: 'dark',
-              conversation: 'none',
-              cards: 'default',
-            }" />
-          <p class="node__url node__url--tiny">{{nodeUrl}}</p>
-        </div>
+      <div class="node__wrapper">
+        <Links
+          v-if="renderLinks"
+          direction="inbound"
+          :node-uuid="nodeUuid" />
 
-        <!-- MEDIA (IMAGES, GIFS, ETC) -->
         <div
-          v-else-if="nodeType === 'media'"
-          class="node__contents node__contents--media">
-          <img :src="nodeUrl" class="node__img-embed" />
-          <p class="node__url node__url--tiny">{{nodeUrl}}</p>
-        </div>
+          class="node__details"
+          v-on:click="handleClick"
+          v-on:keyup.enter="handleClick"
+          tabindex="0">
 
-        <!-- WEBSITE -->
-        <div
-          v-else-if="nodeType === 'website' && websiteMeta !== null"
-          class="node__contents node__contents--website">
-          <img
-            v-if="websiteMeta.favicon"
-            class="node__favicon"
-            :src="websiteMeta.favicon"
-            :alt="websiteMeta.favicon_alt" />
-          <div class="node__text">
-            <span
-              v-if="websiteMeta.title"
-              class="node__title">
-              {{websiteMeta.title}}
-            </span>
-            <p
-              v-if="websiteMeta.description"
-              class="node__description">
-              {{websiteMeta.description}}
-            </p>
+          <!-- TWEETS -->
+          <div
+            v-if="nodeType === 'twitter' && twitterData !== null"
+            class="node__contents node__contents--twitter">
+            <Tweet
+              :id="twitterData.id_str"
+              :options="{
+                theme: 'dark',
+                conversation: 'none',
+                cards: 'default',
+              }" />
             <p class="node__url node__url--tiny">{{nodeUrl}}</p>
+          </div>
+
+          <!-- MEDIA (IMAGES, GIFS, ETC) -->
+          <div
+            v-else-if="nodeType === 'media'"
+            class="node__contents node__contents--media">
+            <img :src="nodeUrl" class="node__img-embed" />
+            <p class="node__url node__url--tiny">{{nodeUrl}}</p>
+          </div>
+
+          <!-- WEBSITE -->
+          <div
+            v-else-if="nodeType === 'website' && websiteMeta !== null"
+            class="node__contents node__contents--website">
+            <img
+              v-if="websiteMeta.favicon"
+              class="node__favicon"
+              :src="websiteMeta.favicon"
+              :alt="websiteMeta.favicon_alt" />
+            <div class="node__text">
+              <span
+                v-if="websiteMeta.title"
+                class="node__title">
+                {{websiteMeta.title}}
+              </span>
+              <p
+                v-if="websiteMeta.description"
+                class="node__description">
+                {{websiteMeta.description}}
+              </p>
+              <p class="node__url node__url--tiny">{{nodeUrl}}</p>
+            </div>
+          </div>
+
+          <!-- GENERIC: Just show the url if we don't have any data -->
+          <div
+            v-else
+            class="node__contents node__contents--generic">
+            <p class="node__url node__url--title">{{nodeUrl}}</p>
           </div>
         </div>
 
-        <!-- GENERIC: Just show the url if we don't have any data -->
-        <div
-          v-else
-          class="node__contents node__contents--generic">
-          <p class="node__url node__url--title">{{nodeUrl}}</p>
-        </div>
+        <Links
+          v-if="renderLinks"
+          direction="outbound"
+          :node-uuid="nodeUuid" />
       </div>
-
-      <Links
-        v-if="renderLinks"
-        direction="outbound"
-        :node-uuid="nodeUuid" />
     </div>
 </template>
 
@@ -80,19 +102,34 @@ export default {
   props: {
     'nodeUuid': String,
     'renderLinks': Boolean,
+    'renderCheckmark': Boolean,
   },
   components: { Tweet, Links },
   computed: {
     node () {
-      return this.$store.getters.getNodeByUUID(this.nodeUuid)
+      return this.$store.getters.getNodeByUUID(this.nodeUuid, true)
     },
     nodeUrl () {
-      return (this.node) ? this.node.node_url : null
+      return this.node.node_url
+    },
+    checkboxID () {
+      return `${this.node.node_uuid}-checkbox`
+    },
+    isSelected: {
+      get () {
+        return this.node.isSelected
+      },
+      set (value) {
+        this.$store.commit('updateNode', {
+          node_uuid: this.nodeUuid,
+          isSelected: value
+        })
+      }
     },
     nodeHasDetails () {
       const hasDetails = (
-        typeof this.node !== 'undefined' &&
-        typeof this.node.node_details !== 'undefined'
+        this.node !== null &&
+        this.node.node_details !== null
       )
 
       if (!hasDetails) {
@@ -140,17 +177,16 @@ export default {
   },
   methods: {
     handleClick () {
-      if (this.nodeType === 'twitter' && this.twitterData !== null) {
-        return
-      }
-
       window.open(this.nodeUrl, '_blank')
-    }
+    },
   },
 }
 </script>
 
 <style lang="scss">
+$checkboxDiameter: 32px;
+$checkboxMargin: 8px;
+
 .node {
   display: flex;
   flex-direction: row;
@@ -158,7 +194,82 @@ export default {
   width: 100%;
   margin: 30px -8px;
 
+  &__checkbox {
+    position: relative;
+    display: block;
+    width: $checkboxDiameter;
+    height: $checkboxDiameter;
+
+    &__input {
+      opacity: 0;
+    }
+
+    &__label {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+
+      &:before {
+        height: 100%;
+        width: 100%;
+        border: 1px solid white;
+        border-radius: 50%;
+      }
+
+      &:after {
+        height: 20%;
+        width: 40%;
+        margin-top: -5%;
+        border-left: 1px solid white;
+        border-bottom: 1px solid white;
+        transform: rotate(-45deg);
+      }
+
+      &:before,
+      &:after {
+        content: "";
+        display: block;
+        position: absolute;
+        opacity: 0.5;
+        transition: all 300ms ease;
+      }
+    }
+
+    &__input:checked + &__label:before {
+      background-color: #2538FF;
+      border: 1px solid #2538FF;
+    }
+
+    &__input:checked + &__label:after {
+      border-left-width: 2px;
+      border-bottom-width: 2px;
+    }
+
+    &__input:checked + &__label:before,
+    &__input:checked + &__label:after {
+      opacity: 1;
+    }
+
+    &__input:focus + &__label:before {
+      outline: rgb(59, 153, 252) auto 5px;
+    }
+  }
+
   &__wrapper {
+    display: flex;
+    flex: 0 0 auto;
+    flex-direction: row;
+    align-items: center;
+
+    width: 100%;
+  }
+
+  &__details {
     width: 100%;
     flex: 0 0 auto;
   }
@@ -226,6 +337,13 @@ export default {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+    }
+  }
+
+  &--with-checkmark {
+    justify-content: space-between;
+    .node__wrapper {
+      width: 90%
     }
   }
 

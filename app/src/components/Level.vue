@@ -8,6 +8,7 @@
         :key="index"
         :node-uuid="nodeUUID"
         :render-links="renderLinks"
+        :render-checkmark="renderCheckmark"
       />
     </div>
 </template>
@@ -23,6 +24,7 @@ export default {
   data () {
     return {
       renderLinks: true,
+      renderCheckmark: true,
     }
   },
   components: { Node },
