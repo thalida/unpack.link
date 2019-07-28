@@ -9,14 +9,16 @@ import hashlib
 import json
 import uuid
 import time
+from contextlib import contextmanager
 
 from redis import Redis
 import docker
 import psycopg2
+import psycopg2.pool
 from psycopg2.extras import RealDictCursor
 
 r = Redis(host=os.environ['UNPACK_HOST'])
-
+postgreSQL_pool = None
 
 ENV_VARS = {
     'DB': {
@@ -99,9 +101,18 @@ class UnpackHelpers:
     def start_docker_container(container_name, request_id):
         docker_client = docker.from_env()
         container_settings = UnpackHelpers.DOCKER_CONTAINER_SETTINGS[container_name]
+        image = 'unpack_container'
         volumes = {}
         action = container_settings['controller_action']
         command = f"{action} -q {request_id}"
+        environment = {
+            'UNPACK_HOST': os.environ['UNPACK_HOST'],
+            'UNPACK_DEV_ENV': os.environ['UNPACK_DEV_ENV'],
+            'UNPACK_DEV_PROFILER': os.environ['UNPACK_DEV_PROFILER'],
+            'UNPACK_DB_NAME': os.environ['UNPACK_DB_NAME'],
+            'UNPACK_DB_USER': os.environ['UNPACK_DB_USER'],
+            'UNPACK_DB_PASSWORD': os.getenv('UNPACK_DB_PASSWORD'),
+        }
 
         if container_settings.get('can_create_containers', False):
             volumes.update({
@@ -115,30 +126,49 @@ class UnpackHelpers:
             })
 
         container = docker_client.containers.run(
-            image="unpack_container",
+            image=image,
             command=command,
-            environment={
-                'UNPACK_HOST': os.environ['UNPACK_HOST'],
-                'UNPACK_DEV_ENV': os.environ['UNPACK_DEV_ENV'],
-                'UNPACK_DEV_PROFILER': os.environ['UNPACK_DEV_PROFILER'],
-                'UNPACK_DB_NAME': os.environ['UNPACK_DB_NAME'],
-                'UNPACK_DB_USER': os.environ['UNPACK_DB_USER'],
-                'UNPACK_DB_PASSWORD': os.getenv('UNPACK_DB_PASSWORD'),
-            },
+            environment=environment,
             volumes=volumes,
             detach=True,
         )
 
         return container
 
+    @contextmanager
+    def getcursor( **kwargs):
+        pool = UnpackHelpers.get_sql_pool()
+        conn = pool.getconn()
+        try:
+            yield conn.cursor(**kwargs)
+            conn.commit()
+
+        except Exception as e:
+            conn.rollback()
+            raise
+
+        finally:
+            pool.putconn(conn)
+
+    @staticmethod
+    def get_sql_pool():
+        try:
+            global postgreSQL_pool
+
+            if postgreSQL_pool is not None:
+                return postgreSQL_pool
+
+            postgreSQL_pool = psycopg2.pool.ThreadedConnectionPool(1, 100, **UnpackHelpers.DB_CREDS)
+            return postgreSQL_pool
+        except (Exception, psycopg2.DatabaseError) as error :
+           UnpackHelpers.raise_error("Error while connecting to PostgreSQL", error=error)
+
     @staticmethod
     def execute_sql(fetch_action, query, query_args):
-        with psycopg2.connect(**UnpackHelpers.DB_CREDS) as conn:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute(query, query_args)
-                fetch_fn = getattr(cur, fetch_action)
-                response = fetch_fn()
-
+        with UnpackHelpers.getcursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(query, query_args)
+            fetch_fn = getattr(cur, fetch_action)
+            response = fetch_fn()
         return response
 
     @staticmethod
@@ -279,6 +309,7 @@ class UnpackHelpers:
                     SELECT source_node_uuid, target_node_uuid, link_type, weight
                     FROM link as l
                     WHERE source_node_uuid = %s
+                    AND target_node_uuid != %s
                     AND updated_on >= (
                         SELECT max(n.updated_on)
                         FROM node as n
@@ -287,7 +318,11 @@ class UnpackHelpers:
                     ORDER BY l.updated_on DESC
                     """
             parent_node_uuid = parent_node_uuid if parent_node_uuid is not None else source_node_uuid
-            query_data = (source_node_uuid,parent_node_uuid,)
+            query_data = (
+                source_node_uuid,
+                UnpackHelpers.BLANK_NODE_UUID,
+                parent_node_uuid,
+            )
             res = UnpackHelpers.execute_sql('fetchall', query, query_data)
             return res
         except Exception:
@@ -301,9 +336,9 @@ class UnpackHelpers:
         if node_url is None:
             raise AttributeError('fetch_node_uuid_by_url requires node_url')
 
-        cache_key = f'{node_url}:node_uuid'
-        if r.exists(cache_key):
-            return r.get(cache_key).decode('utf-8')
+        # cache_key = f'{node_url}:node_uuid'
+        # if r.exists(cache_key):
+        #     return r.get(cache_key).decode('utf-8')
 
         try:
             res = UnpackHelpers.execute_sql(
@@ -320,7 +355,7 @@ class UnpackHelpers:
                 res = UnpackHelpers.store_node_url(node_url)
 
             node_uuid = res.get('uuid')
-            r.set(cache_key, node_uuid.encode('utf-8'))
+            # r.set(cache_key, node_uuid.encode('utf-8'))
 
             return node_uuid
         except Exception as e:
@@ -334,9 +369,9 @@ class UnpackHelpers:
         if node_uuid is None:
             raise AttributeError('fetch_node_url_by_uuid requires node_uuid')
 
-        cache_key = f'{node_uuid}:node_url'
-        if r.exists(cache_key):
-            return r.get(cache_key).decode('utf-8')
+        # cache_key = f'{node_uuid}:node_url'
+        # if r.exists(cache_key):
+        #     return r.get(cache_key).decode('utf-8')
 
         try:
             res = UnpackHelpers.execute_sql(
@@ -350,7 +385,7 @@ class UnpackHelpers:
             )
 
             node_url = res.get('url')
-            r.set(cache_key, node_url.encode('utf-8'))
+            # r.set(cache_key, node_url.encode('utf-8'))
 
             return node_url
         except Exception:

@@ -24,24 +24,35 @@ def main():
         help='Unpack action'
     )
     parser.add_argument('-q', '--request', help="Request Id")
-
     args = parser.parse_args()
 
     if args.action == 'api':
-        import unpack.api
-        unpack.api.main()
+        try:
+            import unpack.api
+            unpack.api.main()
+        except Exception:
+            logger.exception('Error importing and running unpack.api')
 
     elif args.action == 'queue-manager':
-        import unpack.queues.manager
-        unpack.queues.manager.main(request_id=args.request)
+        try:
+            import unpack.queues.manager
+            unpack.queues.manager.main(request_id=args.request)
+        except Exception:
+            logger.exception('Error importing and running unpack.queues.manager')
 
     elif args.action == 'queue-fetcher-worker':
-        import unpack.queues.consumers.fetcher
-        unpack.queues.consumers.fetcher.main(request_id=args.request)
+        try:
+            import unpack.queues.consumers.fetcher
+            unpack.queues.consumers.fetcher.main(request_id=args.request)
+        except Exception:
+            logger.exception('Error importing and running unpack.queues.consumers.fetcher')
 
     elif args.action == 'queue-broadcast-worker':
-        import unpack.queues.consumers.broadcaster
-        unpack.queues.consumers.broadcaster.main(request_id=args.request)
+        try:
+            import unpack.queues.consumers.broadcaster
+            unpack.queues.consumers.broadcaster.main(request_id=args.request)
+        except Exception:
+            logger.exception('Error importing and running unpack.queues.consumers.broadcaster')
 
 if __name__ == '__main__':
     main()

@@ -126,10 +126,9 @@ def main(request_id):
             container_name=UnpackHelpers.DOCKER_CONTAINER_NAMES['QUEUE_FETCHER_WORKER'],
             request_id=request_id,
         )
-        logger.info(f'created container: {fetcher_container}')
         containers.append(fetcher_container)
 
-    logger.info(f'created containers: {containers}')
+    logger.info(f'Created containers {containers} for id {request_id}')
 
     # As long as queue has data in it and the TTL has not been reached
     while True:

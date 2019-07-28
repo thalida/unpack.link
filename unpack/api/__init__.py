@@ -1,6 +1,5 @@
 from ..log import *
 
-import requests
 import os
 os.environ['TZ'] = 'UTC'
 
@@ -9,7 +8,7 @@ eventlet.monkey_patch()
 
 import logging
 import json
-from flask import Flask, abort, request, abort, jsonify
+from flask import Flask, abort, request, jsonify
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 import pika
@@ -124,8 +123,15 @@ def queue_stop(request_id):
         abort(500)
 
 def main():
+    UnpackHelpers.get_sql_pool()
     is_debug = os.environ['UNPACK_DEV_ENV'] == 'TRUE'
-    socketio.run(app, host='0.0.0.0', port='5000', debug=is_debug)
+    socketio.run(
+        app,
+        host='0.0.0.0',
+        port='5000',
+        debug=is_debug,
+        use_reloader=False
+    )
 
 if __name__ == '__main__':
     main()

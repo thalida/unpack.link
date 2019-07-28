@@ -10,6 +10,10 @@
 - rabbitmq: http://localhost:15672/
 - logs: http://localhost:5601/
 
+## Helpful Commands
+- clear redis cache: `docker exec -it $container_id  redis-cli FLUSHALL`
+- access postgres through docker: https://gist.github.com/MauricioMoraes/87d76577babd4e084cba70f63c04b07d
+
 ## Examples
 ### Twitter
 ```
@@ -61,4 +65,6 @@ deleted_quoted_tweet = 946795191784132610
 - [x] change any print statements to log.info things
 - [x] move broadcaster to be under queue manager
 - [x] figure out why queues aren't being deleted
-- [ ] add shared enum yaml files
+- [ ] improve code readability
+    - [ ] add shared enum yaml files
+    - [ ] move os.environ logic to central helper function that'll properly cast bools, ints, etc.
