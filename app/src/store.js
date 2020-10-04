@@ -22,7 +22,7 @@ export default new Vuex.Store({
     links: {},
     settings: {
       rules: {
-        max_link_depth: 1,
+        max_link_depth: 2,
         force_from_db: false,
         force_from_web: false,
       },
