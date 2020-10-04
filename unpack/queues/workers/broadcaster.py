@@ -1,4 +1,4 @@
-from ...log import *
+import log
 import os
 os.environ['TZ'] = 'UTC'
 
@@ -7,7 +7,7 @@ import logging
 
 from flask_socketio import SocketIO, emit
 
-from ...helpers import UnpackHelpers
+from helpers import UnpackHelpers
 
 logger = logging.getLogger(__name__)
 socketio = SocketIO(message_queue=f'amqp://{os.environ["UNPACK_HOST"]}:5672')

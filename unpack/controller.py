@@ -1,4 +1,4 @@
-import unpack.log
+import log
 import logging
 
 import sys
@@ -28,31 +28,31 @@ def main():
 
     if args.action == 'api':
         try:
-            import unpack.api
-            unpack.api.main()
+            import api
+            api.main()
         except Exception:
-            logger.exception('Error importing and running unpack.api')
+            logger.exception('Error importing and running api')
 
     elif args.action == 'queue-manager':
         try:
-            import unpack.queues.manager
-            unpack.queues.manager.main(request_id=args.request)
+            import queues.manager
+            queues.manager.main(request_id=args.request)
         except Exception:
-            logger.exception('Error importing and running unpack.queues.manager')
+            logger.exception('Error importing and running queues.manager')
 
     elif args.action == 'queue-fetcher-worker':
         try:
-            import unpack.queues.consumers.fetcher
-            unpack.queues.consumers.fetcher.main(request_id=args.request)
+            import queues.consumers.fetcher
+            queues.consumers.fetcher.main(request_id=args.request)
         except Exception:
-            logger.exception('Error importing and running unpack.queues.consumers.fetcher')
+            logger.exception('Error importing and running queues.consumers.fetcher')
 
     elif args.action == 'queue-broadcast-worker':
         try:
-            import unpack.queues.consumers.broadcaster
-            unpack.queues.consumers.broadcaster.main(request_id=args.request)
+            import queues.consumers.broadcaster
+            queues.consumers.broadcaster.main(request_id=args.request)
         except Exception:
-            logger.exception('Error importing and running unpack.queues.consumers.broadcaster')
+            logger.exception('Error importing and running queues.consumers.broadcaster')
 
 if __name__ == '__main__':
     main()

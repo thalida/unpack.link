@@ -1,4 +1,4 @@
-from .log import *
+import log
 import os
 os.environ['TZ'] = 'UTC'
 
@@ -101,7 +101,7 @@ class UnpackHelpers:
     def start_docker_container(container_name, request_id):
         docker_client = docker.from_env()
         container_settings = UnpackHelpers.DOCKER_CONTAINER_SETTINGS[container_name]
-        image = 'unpack_container'
+        image = 'unpack'
         volumes = {}
         action = container_settings['controller_action']
         command = f"{action} -q {request_id}"
@@ -122,7 +122,6 @@ class UnpackHelpers:
         if os.environ['UNPACK_DEV_ENV'] == 'TRUE':
             volumes.update({
                 '/Users/thalida/Repos/unpack.link/unpack': {'bind': '/unpack', 'mode': 'rw'},
-                '/Users/thalida/Repos/unpack.link/controller.py': {'bind': '/controller.py', 'mode': 'rw'},
             })
 
         container = docker_client.containers.run(
@@ -135,8 +134,9 @@ class UnpackHelpers:
 
         return container
 
+    @staticmethod
     @contextmanager
-    def getcursor( **kwargs):
+    def getcursor(**kwargs):
         pool = UnpackHelpers.get_sql_pool()
         conn = pool.getconn()
         try:

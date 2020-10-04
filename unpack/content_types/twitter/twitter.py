@@ -1,4 +1,4 @@
-from ...log import *
+import log
 import os
 os.environ['TZ'] = 'UTC'
 

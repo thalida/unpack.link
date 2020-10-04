@@ -1,4 +1,4 @@
-from ...log import *
+import log
 
 import os
 os.environ['TZ'] = 'UTC'
@@ -9,8 +9,8 @@ logger = logging.getLogger(__name__)
 import pika
 from retry import retry
 
-from unpack.helpers import UnpackHelpers
-from unpack.queues.workers.fetcher import Fetcher
+from helpers import UnpackHelpers
+from queues.workers.fetcher import Fetcher
 
 
 def handle_message_callback(*args, **kwargs):

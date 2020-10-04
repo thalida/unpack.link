@@ -1,4 +1,4 @@
-from ...log import *
+import log
 import os
 os.environ['TZ'] = 'UTC'
 
@@ -13,7 +13,7 @@ import datetime
 import requests
 from parsel import Selector
 
-from ...helpers import UnpackHelpers
+from helpers import UnpackHelpers
 
 
 class ContentTypeWebsite:

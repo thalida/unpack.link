@@ -1,7 +1,8 @@
 import os
 import sys
+import traceback
 import logging
-import logstash
+import logstash_async.handler
 import logstash_async.formatter
 
 warning_only_libs = [
@@ -18,10 +19,18 @@ for lib in warning_only_libs:
 root_logger = logging.getLogger()
 root_logger.setLevel(logging.DEBUG)
 
-lsh = logstash.TCPLogstashHandler(os.environ['UNPACK_HOST'], 5959)
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.DEBUG)
+root_logger.addHandler(console_handler)
+
+logstash_handler = logstash_async.handler.AsynchronousLogstashHandler(
+    os.environ['UNPACK_HOST'],
+    5959,
+    database_path=None
+)
 logstash_formatter = logstash_async.formatter.LogstashFormatter()
-lsh.setFormatter(logstash_formatter)
-root_logger.addHandler(lsh)
+logstash_handler.setFormatter(logstash_formatter)
+root_logger.addHandler(logstash_handler)
 
 def handle_excepthook(exctype, value, tb):
     uncaught_logger = logging.getLogger('uncaught')

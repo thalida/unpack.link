@@ -1,4 +1,4 @@
-from ...log import *
+import log
 import os
 os.environ['TZ'] = 'UTC'
 
@@ -10,10 +10,10 @@ import json
 import pika
 from redis import Redis
 
-from ...helpers import UnpackHelpers
-from ...content_types.twitter import ContentTypeTwitter
-from ...content_types.media import ContentTypeMedia
-from ...content_types.website import ContentTypeWebsite
+from helpers import UnpackHelpers
+from content_types.twitter import ContentTypeTwitter
+from content_types.media import ContentTypeMedia
+from content_types.website import ContentTypeWebsite
 
 r = Redis(host=os.environ['UNPACK_HOST'])
 

@@ -1,6 +1,18 @@
 version: "3"
 
 services:
+  postgres:
+    image: postgres:12
+    restart: always
+    environment:
+      - POSTGRES_DB
+      - POSTGRES_USER
+      - POSTGRES_PASSWORD
+    ports:
+      - 5432:5432
+    volumes:
+      - /Users/thalida/Repos/unpack.link/postgres/data:/var/lib/postgresql/data
+
   redis:
     image: redis:alpine
     ports:
@@ -12,18 +24,27 @@ services:
       - 15672:15672
       - 5672:5672
 
-  frontend_app:
-    build: ./app
-    image: frontend_app
+  elk:
+    image: sebp/elk:latest
+    restart: always
     ports:
-      - 8080:80
+      - 5959:5959
+      - 5601:5601
+      - 9200:9200
+      - 5044:5044
+    volumes:
+      - /Users/thalida/Repos/unpack.link/elk/elasticsearch:/var/lib/elasticsearch
+      - /Users/thalida/Repos/unpack.link/elk/logstash:/etc/logstash/conf.d
+      - /Users/thalida/Repos/unpack.link/elk/archive:/archive
 
-  api:
-    build: .
-    image: unpack_container
+  unpack:
+    build: ./unpack
+    image: unpack
     depends_on:
+      - postgres
       - rabbitmq
       - redis
+      - elk
     command: 'api'
     ports:
       - 5000:5000
@@ -37,16 +58,10 @@ services:
       - PYTHONUNBUFFERED=false
     volumes:
       - /Users/thalida/Repos/unpack.link/unpack:/unpack
-      - /Users/thalida/Repos/unpack.link/controller.py:/controller.py
       - /var/run/docker.sock:/var/run/docker.sock
 
-  elk:
-    image: sebp/elk:701
-    restart: always
+  app:
+    build: ./app
+    image: app
     ports:
-      - 5959:5959
-      - 5601:5601
-    volumes:
-      - /Users/thalida/Repos/unpack.link/elk/elasticsearch:/var/lib/elasticsearch
-      - /Users/thalida/Repos/unpack.link/elk/logstash:/etc/logstash/conf.d
-      - /Users/thalida/Repos/unpack.link/elk/archive:/archive
+      - 8080:80

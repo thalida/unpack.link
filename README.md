@@ -4,6 +4,7 @@
 - Run `docker-compose up --build`
 - Run `npm run serve`
 - Check that it's running with `docker ps`
+- Start postgres: brew services start postgresql
 
 ## Local Dashboards and Visuals
 - website: http://localhost:8080/

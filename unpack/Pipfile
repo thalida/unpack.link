@@ -1,25 +1,7 @@
 [[source]]
+name = "pypi"
 url = "https://pypi.org/simple"
 verify_ssl = true
-name = "pypi"
-
-[packages]
-twython = "*"
-flask = "*"
-flask-socketio = "*"
-eventlet = "*"
-psycopg2 = "*"
-selenium = "*"
-webdriver-manager = "*"
-parsel = "*"
-pika = "*"
-kombu = "*"
-flask-cors = "*"
-docker = "*"
-redis = "*"
-retry = "*"
-python-logstash = "*"
-python-logstash-async = "*"
 
 [dev-packages]
 snakeviz = "*"
@@ -27,5 +9,24 @@ pylint = "*"
 pyprof2calltree = "*"
 autopep8 = "*"
 
+[packages]
+twython = "*"
+flask = "*"
+flask-socketio = "*"
+eventlet = "*"
+selenium = "*"
+webdriver-manager = "*"
+parsel = "*"
+pika = "*"
+flask-cors = "*"
+docker = "*"
+redis = "*"
+retry = "*"
+psycopg2-binary = "*"
+python-logstash = "*"
+python-logstash-async = "*"
+kombu = "*"
+alembic = "*"
+
 [requires]
-python_version = "3.6"
+python_version = "3.7"

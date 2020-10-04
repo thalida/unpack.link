@@ -1,4 +1,4 @@
-from ..log import *
+import log
 
 import os
 os.environ['TZ'] = 'UTC'
@@ -13,7 +13,7 @@ from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 import pika
 
-from ..helpers import UnpackHelpers
+from helpers import UnpackHelpers
 
 logger = logging.getLogger(__name__)
 
@@ -21,10 +21,11 @@ app = Flask(__name__,
             static_folder="./dist",
             template_folder="./dist")
 app.url_map.strict_slashes = False
-cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
+cors = CORS(app)
 
+allowed_origin = f'http://{os.environ["UNPACK_HOST"]}:8080'
 socketio = SocketIO()
-socketio.init_app(app, message_queue=f'amqp://{os.environ["UNPACK_HOST"]}:5672')
+socketio.init_app(app, message_queue=f'amqp://{os.environ["UNPACK_HOST"]}:5672', cors_allowed_origins=allowed_origin)
 
 @app.route('/api/queue/create', methods=['POST'])
 def queue_create():

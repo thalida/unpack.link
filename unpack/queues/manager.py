@@ -1,4 +1,4 @@
-from ..log import *
+import log
 import os
 import pika
 import time
@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 import requests
 import urllib.parse
 
-from ..helpers import UnpackHelpers
+from helpers import UnpackHelpers
 
 rabbitmq_api_url = f'http://{os.environ["UNPACK_HOST"]}:15672/api'
 rabbitmq_auth = ('guest', 'guest')
