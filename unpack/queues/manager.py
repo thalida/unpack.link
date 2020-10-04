@@ -14,7 +14,7 @@ import urllib.parse
 from helpers import UnpackHelpers
 
 rabbitmq_api_url = f'http://{os.environ["UNPACK_HOST"]}:15672/api'
-rabbitmq_auth = ('guest', 'guest')
+rabbitmq_auth = (os.environ["RABBITMQ_USER"], os.environ["RABBITMQ_PASSWORD"])
 rabbitmq_vhost = '/'
 
 def quote(string):

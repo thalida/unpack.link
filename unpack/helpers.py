@@ -112,6 +112,8 @@ class UnpackHelpers:
             'UNPACK_DB_NAME': os.environ['UNPACK_DB_NAME'],
             'UNPACK_DB_USER': os.environ['UNPACK_DB_USER'],
             'UNPACK_DB_PASSWORD': os.getenv('UNPACK_DB_PASSWORD'),
+            'RABBITMQ_USER': os.environ['RABBITMQ_USER'],
+            'RABBITMQ_PASSWORD': os.environ['RABBITMQ_PASSWORD'],
         }
 
         if container_settings.get('can_create_containers', False):

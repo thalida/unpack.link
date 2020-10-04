@@ -55,6 +55,8 @@ services:
       - UNPACK_DB_NAME
       - UNPACK_DB_USER
       - UNPACK_DB_PASSWORD
+      - RABBITMQ_USER
+      - RABBITMQ_PASSWORD
       - PYTHONUNBUFFERED=false
     volumes:
       - /Users/thalida/Repos/unpack.link/unpack:/unpack
