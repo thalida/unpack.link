@@ -65,6 +65,8 @@ class Fetcher:
         self.origin_source_uuid = UnpackHelpers.fetch_node_uuid(self.origin_source_node_url)
         self.is_origin_node = self.source_node_uuid is None
 
+        self.nofollow_link = body.get('nofollow_link', False)
+
         self.publish_broadcast(
             event_name=UnpackHelpers.EVENT_NAME['NODE:IN_PROGRESS'],
             node_uuid=self.node_uuid,
@@ -86,6 +88,8 @@ class Fetcher:
             rules=self.rules
         )
 
+        node_details['was_no_follow'] = self.nofollow_link
+
         has_links = len(raw_links) > 0
 
         if not node_details.get('is_from_db', True):
@@ -102,6 +106,9 @@ class Fetcher:
             node_url=self.node_url,
             node_details=node_details,
         )
+
+        if self.nofollow_link:
+            return
 
         if not has_links:
             UnpackHelpers.store_link(self.node_uuid)
@@ -130,6 +137,7 @@ class Fetcher:
             source_node_uuid = self.node_uuid
             target_node_url = raw_link.get('target_node_url')
             target_node_uuid = raw_link.get('target_node_uuid')
+            nofollow_link = raw_link.get('nofollow', False)
 
             if not target_node_uuid and target_node_url:
                 target_node_uuid = UnpackHelpers.fetch_node_uuid(target_node_url)
@@ -140,19 +148,21 @@ class Fetcher:
             if not target_node_uuid or not target_node_url:
                 continue
 
-            self.store_link(
-                source_node_url=source_node_url,
-                source_node_uuid=source_node_uuid,
-                target_node_url=target_node_url,
-                target_node_uuid=target_node_uuid,
-                raw_link=raw_link,
-            )
+            if not nofollow_link:
+                self.store_link(
+                    source_node_url=source_node_url,
+                    source_node_uuid=source_node_uuid,
+                    target_node_url=target_node_url,
+                    target_node_uuid=target_node_uuid,
+                    raw_link=raw_link,
+                )
 
             self.queue_next_node(
                 source_node_url=source_node_url,
                 source_node_uuid=source_node_uuid,
                 target_node_url=target_node_url,
-                target_node_uuid=target_node_uuid
+                target_node_uuid=target_node_uuid,
+                raw_link=raw_link
             )
 
     def store_link(self, source_node_url, source_node_uuid, target_node_url, target_node_uuid, raw_link):
@@ -174,7 +184,7 @@ class Fetcher:
             weight=raw_link.get('weight'),
         )
 
-    def queue_next_node(self, source_node_url, source_node_uuid, target_node_url, target_node_uuid):
+    def queue_next_node(self, source_node_url, source_node_uuid, target_node_url, target_node_uuid, raw_link):
         if target_node_url == source_node_url:
             return
 
@@ -186,6 +196,8 @@ class Fetcher:
         new_fetcher_state = self.state.copy()
         new_fetcher_state['level'] += 1
 
+        nofollow_link = raw_link.get('nofollow', False)
+
         self.publish_child(
             node_uuid=target_node_uuid,
             node_url=target_node_url,
@@ -193,6 +205,7 @@ class Fetcher:
             origin_source_node_url=self.origin_source_node_url,
             state=new_fetcher_state,
             rules=self.rules,
+            nofollow_link=nofollow_link,
         )
 
         self.publish_broadcast(

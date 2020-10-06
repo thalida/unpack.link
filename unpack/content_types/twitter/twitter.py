@@ -73,6 +73,7 @@ class ContentTypeTwitter(ContentTypeWebsite):
             node_details = cls.setup_node_details(
                 node_data=str(e),
                 is_error=True,
+                error_type=type(e).__name__,
             )
             links = []
 

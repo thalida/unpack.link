@@ -20,6 +20,7 @@ from psycopg2.extras import RealDictCursor
 r = Redis(host=os.environ['UNPACK_HOST'])
 postgreSQL_pool = None
 
+VERSION = 0
 ENV_VARS = {
     'DB': {
         'HOST': 'UNPACK_HOST',
@@ -30,6 +31,8 @@ ENV_VARS = {
 }
 
 class UnpackHelpers:
+    USER_AGENT = 'unpackbot'
+
     DB_CREDS = {
         'host': os.getenv(ENV_VARS['DB']['HOST']),
         'dbname': os.getenv(ENV_VARS['DB']['NAME']),
